@@ -75,6 +75,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+    marginTop: 50
   },
   historyCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
