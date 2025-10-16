@@ -17,6 +17,7 @@ import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { useListening } from './contexts/ListeningContext';
+import { instance } from './utils/axios';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -433,7 +434,7 @@ const HomeScreen = () => {
 
   const identifySong = async (fileUri: string) => {
     try {
-      const AUDD_API_KEY = '5cf78c3967c25ba9ee942c9e2f206260';
+      const AUDD_API_KEY = '91ee7b66da60b00851fedcd0edf1ccc7';
 
       const formData = new FormData();
       formData.append('file', {
@@ -452,12 +453,50 @@ const HomeScreen = () => {
       });
 
       const data = await response.json();
+      // const reslt = JSON.parse(data);
+      // response dari third party API
       console.log('API Response:', JSON.stringify(data, null, 2));
 
       if (data.status === 'success' && data.result) {
+
+        console.log(JSON.stringify(data, null, 2), "<<<<<<<<< DATAAA")
         const result = data.result;
         const spotify = result.spotify;
         const appleMusic = result.apple_music;
+        const isrc = spotify.id;
+        const title = spotify.name;
+        const artist = spotify.artists[0].name;
+        const album = spotify.album.name;
+        const cover_art_url = spotify.album.images[0].url;
+        const duration_ms = spotify.duration_ms;
+        const spotify_url = spotify.external_urls.spotify;
+        const apple_music_url = appleMusic.url;
+        const preview_url = spotify.preview_url || appleMusic.previews[0].url;
+        const release_date = spotify.album.release_date;
+        const genre = appleMusic.genreNames[0];
+
+        console.log('=== Song Data ===');
+        console.log('Spotify ID:', isrc);
+        console.log('Title:', title);
+        console.log('Artist:', artist);
+        console.log('Album:', album);
+        console.log('Cover Art URL:', cover_art_url);
+        console.log('Duration (ms):', duration_ms);
+        console.log('Spotify URL:', spotify_url);
+        console.log('Apple Music URL:', apple_music_url);
+        console.log('Preview URL:', preview_url);
+        console.log('Release Date:', release_date);
+        console.log('Genre:', genre);
+        console.log('================');
+
+        const postSong = await instance({
+          url : '/songs',
+          method : "POST",
+          data : {isrc, title, artist, album, cover_art_url, duration_ms : +duration_ms, spotify_url, apple_music_url, preview_url, release_date : new Date(release_date), genre}
+        });
+
+        console.log(postSong)
+
 
         let coverArt = null;
 

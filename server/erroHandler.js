@@ -1,6 +1,6 @@
 const errorHandler = (err, req, res, next) => {
-  console.error('Error:', err);
-  switch (err) {
+  console.log('Error:', err);
+  switch (err.name) {
     case 'DocumentNotFoundError':
       return res.status(404).json({ 
       message: 'Document not found',
@@ -13,7 +13,7 @@ const errorHandler = (err, req, res, next) => {
     });
     default:
       return res.status(500).json({ 
-        message: 'Internal Server Error',
+        message: 'Internal Server Errors',
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
       });
   }
