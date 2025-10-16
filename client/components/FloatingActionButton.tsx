@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -40 }],
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1000,
+    zIndex: 1001,
   },
   fabContainer: {
     shadowColor: '#FF9F4D',
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.5,
     shadowRadius: 12,
-    elevation: 15,
+    elevation: 35,
   },
   fab: {
     width: 80,

@@ -123,7 +123,7 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
                   </View>
 
                   {/* Right Side: Menu Icon */}
-                  <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.7)" />
+                  <Ionicons name="chevron-forward" size={24} color="rgba(0, 0, 0, 0.7)" />
                 </View>
               </TouchableOpacity>
             </View>
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: 'BebasNeue_400Regular',
     fontSize: 42,
-    color: '#FFFFFF',
+    color: '#000000ff',
     letterSpacing: 3,
     textTransform: 'uppercase',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
@@ -200,8 +200,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.15)',
     paddingBottom: 16,
   },
   // Text Hierarchy
@@ -213,17 +213,14 @@ const styles = StyleSheet.create({
   playlistTitle: {
     fontFamily: 'Poppins_700Bold',
     fontSize: 18,
-    color: '#FFFFFF',
+    color: '#000000ff',
     marginBottom: 6,
     letterSpacing: 0.3,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
   playlistDescription: {
     fontFamily: 'Rajdhani_600SemiBold',
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.65)',
+    color: 'rgba(0, 0, 0, 0.65)',
     letterSpacing: 0.4,
   },
 });

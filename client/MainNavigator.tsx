@@ -14,21 +14,14 @@ export type RootStackParamList = {
   HistoryScreen: undefined;
   HomeScreen: undefined;
   MainTabs: undefined;
-  PlaylistDetail: { playlist: any };
   ResultDetailScreen: undefined;
+  PlaylistDetail: { playlist: any };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 const MainNavigator = () => {
   return (
     <Stack.Navigator>
-      <Stack.Screen
-        name="ResultDetailScreen"
-        component={SongResultDetail}
-        options={{
-          headerShown: false,
-        }}
-      />
       <Stack.Screen
         name="MainTabs"
         component={BottomTabNavigator}
@@ -49,6 +42,13 @@ const MainNavigator = () => {
       <Stack.Screen
         name="PlaylistDetail"
         component={PlaylistDetailScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="ResultDetailScreen"
+        component={SongResultDetail}
         options={{
           headerShown: false,
         }}

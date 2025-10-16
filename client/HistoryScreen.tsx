@@ -1,5 +1,5 @@
 import { StyleSheet, View, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
-import React from 'react';
+import React, { use } from 'react';
 import { Card, Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import {
 } from '@expo-google-fonts/poppins';
 import { Rajdhani_700Bold, Rajdhani_600SemiBold } from '@expo-google-fonts/rajdhani';
 import { Inter_700Bold, Inter_600SemiBold } from '@expo-google-fonts/inter';
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
@@ -102,8 +103,13 @@ const dummyHistory = [
     cover: 'https://i.scdn.co/image/ab67616d0000b273e46a155e6c8c5fb41e8fc875',
   },
 ];
+interface HistoryScreenProps {
+  navigation?: any;
+}
 
 const HistoryScreen = () => {
+  const navigation = useNavigation<HistoryScreenProps['navigation']>();
+
   let [fontsLoaded] = useFonts({
     BebasNeue_400Regular,
     Poppins_700Bold,
@@ -146,8 +152,10 @@ const HistoryScreen = () => {
                   style={styles.featuredImage}
                   resizeMode="cover"
                 />
+                {/* Dark overlay untuk membuat tulisan lebih timbul */}
+                <View style={styles.featuredOverlay} />
                 <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.7)']}
+                  colors={['transparent', 'rgba(0,0,0,0.85)']}
                   style={styles.featuredGradient}
                 >
                   <Text style={styles.featuredArtist} numberOfLines={1}>
@@ -164,7 +172,11 @@ const HistoryScreen = () => {
           <Text style={styles.sectionTitle}>Your History</Text>
 
           {dummyHistory.map((item) => (
-            <TouchableOpacity key={item.id} activeOpacity={0.7}>
+            <TouchableOpacity
+              key={item.id}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('ResultDetailScreen')}
+            >
               <View style={styles.historyItem}>
                 <View style={styles.historyItemLeft}>
                   <Image
@@ -183,7 +195,7 @@ const HistoryScreen = () => {
                 </View>
                 <View style={styles.historyItemRight}>
                   <Text style={styles.historyDuration}>{item.duration}</Text>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+                  <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.6)" />
                 </View>
               </View>
             </TouchableOpacity>
@@ -230,6 +242,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  featuredOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+  },
   featuredGradient: {
     position: 'absolute',
     bottom: 0,
@@ -237,6 +257,7 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 14,
     justifyContent: 'flex-end',
+    height: '50%',
   },
   featuredArtist: {
     fontFamily: 'BebasNeue_400Regular',
@@ -256,7 +277,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'BebasNeue_400Regular',
     fontSize: 38,
-    color: '#FFFFFF',
+    color: '#000000ff',
     marginBottom: 24,
     letterSpacing: 3,
     textTransform: 'uppercase',
@@ -269,8 +290,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.12)',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0,0,0,0.12)',
   },
   historyItemLeft: {
     flexDirection: 'row',
@@ -290,17 +311,14 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontFamily: 'Poppins_700Bold',
     fontSize: 17,
-    color: '#FFFFFF',
+    color: '#000000ff',
     marginBottom: 6,
     letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   historyArtist: {
     fontFamily: 'Rajdhani_600SemiBold',
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    color: '#000000ff',
     letterSpacing: 0.5,
   },
   historyItemRight: {
@@ -311,7 +329,7 @@ const styles = StyleSheet.create({
   historyDuration: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#000000ff',
     letterSpacing: 0.5,
     marginRight: 4,
   },
