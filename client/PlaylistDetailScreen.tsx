@@ -89,10 +89,9 @@ const PlaylistDetailScreen: React.FC<PlaylistDetailScreenProps> = ({ route, navi
               onPress={() => navigation?.goBack()}
               activeOpacity={0.7}
             >
-              <Ionicons name="chevron-back" size={40} color="#FFFFFF" />
+              <Ionicons name="chevron-back" size={40} color="#000000ff" />
             </TouchableOpacity>
 
-            {/* Orange Background Header - Full ke kanan, jarak di kiri */}
             <View style={styles.headerBackground} />
 
             {/* Vertical Text on Left */}
@@ -221,8 +220,8 @@ const styles = StyleSheet.create({
   },
   verticalText: {
     fontFamily: 'BebasNeue_400Regular',
-    fontSize: 18,
-    color: '#FFFFFF',
+    fontSize: 22,
+    color: '#f1ececff',
     letterSpacing: 2.5,
     textAlign: 'left',
   },
@@ -307,8 +306,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.15)',
     paddingBottom: 12,
   },
   songTextContainer: {
@@ -319,20 +318,20 @@ const styles = StyleSheet.create({
   songTitle: {
     fontFamily: 'Poppins_700Bold',
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#000000ff',
     marginBottom: 4,
     letterSpacing: 0.3,
   },
   songArtist: {
     fontFamily: 'Rajdhani_600SemiBold',
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.65)',
+    color: 'rgba(0, 0, 0, 0.65)',
     letterSpacing: 0.3,
   },
   songDuration: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(0, 0, 0, 0.7)',
     letterSpacing: 0.3,
   },
 });

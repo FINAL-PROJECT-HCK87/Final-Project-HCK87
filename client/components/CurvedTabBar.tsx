@@ -13,11 +13,7 @@ const CurvedTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigat
   return (
     <View style={styles.container}>
       {/* SVG Curved Shape */}
-      <Svg
-        width={width}
-        height={TAB_BAR_HEIGHT + CURVE_HEIGHT}
-        style={styles.svgContainer}
-      >
+      <Svg width={width} height={TAB_BAR_HEIGHT + CURVE_HEIGHT} style={styles.svgContainer}>
         <Path
           d={`
             M 0,${CURVE_HEIGHT}
@@ -82,17 +78,8 @@ const CurvedTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigat
               onPress={onPress}
               style={styles.tab}
             >
-              <Ionicons
-                name={iconName}
-                size={26}
-                color={isFocused ? '#FF9F4D' : '#A0A0A5'}
-              />
-              <Text
-                style={[
-                  styles.label,
-                  { color: isFocused ? '#FF9F4D' : '#A0A0A5' },
-                ]}
-              >
+              <Ionicons name={iconName} size={26} color={isFocused ? '#FF9F4D' : '#A0A0A5'} />
+              <Text style={[styles.label, { color: isFocused ? '#FF9F4D' : '#A0A0A5' }]}>
                 {label}
               </Text>
             </TouchableOpacity>
@@ -110,6 +97,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: TAB_BAR_HEIGHT + CURVE_HEIGHT,
+    elevation: 30,
+    shadowColor: '#d45806ff',
+    shadowOffset: {
+      width: 0,
+      height: -8,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    zIndex: 100,
   },
   svgContainer: {
     position: 'absolute',
