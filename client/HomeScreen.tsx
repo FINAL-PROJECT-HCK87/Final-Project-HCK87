@@ -16,9 +16,11 @@ import LogoSvg from './components/LogoSvg';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
+import { useListening } from './contexts/ListeningContext';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const { setIsListening } = useListening();
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isIdentifying, setIsIdentifying] = useState(false);
@@ -45,13 +47,9 @@ const HomeScreen = () => {
   const visualizer3 = useRef(new Animated.Value(0)).current;
   const visualizer4 = useRef(new Animated.Value(0)).current;
 
-  // Circular spectrum visualizer (12 bars around logo)
   const spectrumBars = useRef(Array.from({ length: 12 }, () => new Animated.Value(0))).current;
 
-  // Timer ref for auto-stop
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Hide tab bar when recording or identifying
   useEffect(() => {
     navigation.setOptions({
       tabBarStyle: {
@@ -59,6 +57,11 @@ const HomeScreen = () => {
       },
     });
   }, [isRecording, isIdentifying, navigation]);
+
+  // Sync listening state with context
+  useEffect(() => {
+    setIsListening(isRecording || isIdentifying);
+  }, [isRecording, isIdentifying, setIsListening]);
 
   // Listening text animation (for both recording and identifying)
   useEffect(() => {
@@ -875,23 +878,25 @@ const HomeScreen = () => {
           </Animated.View>
 
           {/* Cancel Button */}
-          <TouchableOpacity style={styles.cancelButton} onPress={cancelListening} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={cancelListening}
+            activeOpacity={0.8}
+          >
             <Ionicons name="close" size={28} color="#FFFFFF" />
           </TouchableOpacity>
         </>
       )}
 
-      {/* Action buttons at bottom */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.uploadBubble}
-          activeOpacity={0.8}
-          onPress={importVideo}
-          disabled={isRecording || isIdentifying}
-        >
-          <Ionicons name="cloud-upload-outline" size={40} color="#FFFFFF" />
+      {/* Upload button - Top Right Corner */}
+      {!isRecording && !isIdentifying && (
+        <TouchableOpacity style={styles.uploadButton} activeOpacity={0.8} onPress={importVideo}>
+          <View style={styles.uploadButtonInner}>
+            <Ionicons name="cloud-upload-outline" size={24} color="#FF9F4D" />
+            <Text style={styles.uploadButtonText}>Import</Text>
+          </View>
         </TouchableOpacity>
-      </View>
+      )}
 
       {/* Result Modal - Dark Theme with Animation */}
       <Modal
@@ -925,7 +930,11 @@ const HomeScreen = () => {
                 ) : (
                   <View style={[styles.albumCover, styles.albumCoverPlaceholder]}>
                     <Ionicons
-                      name={result?.title === 'Song Not Found' || result?.title === 'Error' ? 'close-circle' : 'musical-notes'}
+                      name={
+                        result?.title === 'Song Not Found' || result?.title === 'Error'
+                          ? 'close-circle'
+                          : 'musical-notes'
+                      }
                       size={40}
                       color="#A0A0A5"
                     />
@@ -1130,28 +1139,35 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  buttonContainer: {
+  uploadButton: {
     position: 'absolute',
-    bottom: 60,
-    alignItems: 'center',
-  },
-  uploadBubble: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    top: 80,
+    right: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 4,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 159, 77, 0.3)',
+  },
+  uploadButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  uploadButtonText: {
+    color: '#FF9F4D',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   modalOverlay: {
     flex: 1,

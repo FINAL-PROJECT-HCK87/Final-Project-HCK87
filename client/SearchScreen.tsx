@@ -1,168 +1,229 @@
-import { StyleSheet, View, ScrollView, TouchableOpacity } from 'react-native'
-import React from 'react'
-import { Card, Text } from 'react-native-paper'
-import { LinearGradient } from 'expo-linear-gradient'
-import { Ionicons } from '@expo/vector-icons'
+import { StyleSheet, View, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
+import React from 'react';
+import { Text } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useFonts, BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
+import { Poppins_700Bold, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
+import { Rajdhani_600SemiBold } from '@expo-google-fonts/rajdhani';
 
-// Dummy data for searches
-const latestSearch = {
-  id: '1',
-  title: 'Blinding Lights',
-  artist: 'The Weeknd',
-  time: 'Just now'
+const { width } = Dimensions.get('window');
+
+interface SearchScreenProps {
+  navigation?: any;
 }
 
-const recentSearches = [
-  { id: '2', title: 'Shape of You', artist: 'Ed Sheeran', time: '10 mins ago' },
-  { id: '3', title: 'Levitating', artist: 'Dua Lipa', time: '1 hour ago' },
-  { id: '4', title: 'Save Your Tears', artist: 'The Weeknd', time: '3 hours ago' },
-  { id: '5', title: 'Peaches', artist: 'Justin Bieber', time: '5 hours ago' },
-  { id: '6', title: 'drivers license', artist: 'Olivia Rodrigo', time: '1 day ago' },
-]
+// Dummy data for playlists - Modern single image design
+const playlists = [
+  {
+    id: '1',
+    title: 'Rumah Ke Rumah',
+    description: '12 lagu • 45 menit',
+    cover: 'https://i.scdn.co/image/ab67616d0000b273ef017e899c0547766997d874',
+  },
+  {
+    id: '2',
+    title: 'Tunggu Apa Lagi',
+    description: '18 lagu • 58 menit',
+    cover: 'https://i.scdn.co/image/ab67616d0000b273e6f407c7f3a0ec98845e4431',
+  },
+  {
+    id: '3',
+    title: 'Hitam Putih',
+    description: '25 lagu • 1 jam 32 menit',
+    cover: 'https://i.scdn.co/image/ab67616d0000b273be841ba4bc24340152e3a79a',
+  },
+  {
+    id: '4',
+    title: 'BIRDS OF A FEATHER',
+    description: '15 lagu • 52 menit',
+    cover: 'https://i.scdn.co/image/ab67616d0000b273ef017e899c0547766997d874',
+  },
+  {
+    id: '5',
+    title: 'Terbuang Dalam Waktu',
+    description: '22 lagu • 1 jam 18 menit',
+    cover: 'https://i.scdn.co/image/ab67616d0000b273e6f407c7f3a0ec98845e4431',
+  },
+  {
+    id: '6',
+    title: 'When We Were Young',
+    description: '20 lagu • 1 jam 5 menit',
+    cover: 'https://i.scdn.co/image/ab67616d0000b273be841ba4bc24340152e3a79a',
+  },
+  {
+    id: '7',
+    title: 'Pop Hits Indonesia',
+    description: '30 lagu • 2 jam 15 menit',
+    cover: 'https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36',
+  },
+  {
+    id: '8',
+    title: 'Acoustic Sessions',
+    description: '16 lagu • 48 menit',
+    cover: 'https://i.scdn.co/image/ab67616d0000b273a91c10fe9472d9bd89802e5a',
+  },
+];
 
-const SearchScreen = () => {
+const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
+  let [fontsLoaded] = useFonts({
+    BebasNeue_400Regular,
+    Poppins_700Bold,
+    Poppins_600SemiBold,
+    Rajdhani_600SemiBold,
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  const handlePlaylistPress = (playlist: any) => {
+    navigation?.navigate('PlaylistDetail', { playlist });
+  };
+
   return (
     <LinearGradient
       colors={['#FFE9D5', '#FFD4A3', '#FFB366', '#FF9F4D', '#FF8C3A']}
       locations={[0, 0.3, 0.5, 0.7, 1]}
       style={styles.container}
     >
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.headerTitle}>Your Searches</Text>
-        
-        {/* Latest Search Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Latest Search</Text>
-          <TouchableOpacity activeOpacity={0.7}>
-            <Card style={styles.searchCard}>
-              <Card.Content style={styles.cardContent}>
-                <View style={styles.iconContainer}>
-                  <Ionicons name="search" size={24} color="#FF8C3A" />
-                </View>
-                <View style={styles.textContainer}>
-                  <Text style={styles.songTitle}>{latestSearch.title}</Text>
-                  <Text style={styles.artistName}>{latestSearch.artist}</Text>
-                </View>
-                <View style={styles.timeContainer}>
-                  <Text style={styles.timeText}>{latestSearch.time}</Text>
-                  <Ionicons name="chevron-forward" size={20} color="#999" />
-                </View>
-              </Card.Content>
-            </Card>
-          </TouchableOpacity>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.headerSection}>
+          <Text style={styles.headerTitle}>Playlist for you</Text>
         </View>
 
-        {/* Recent Searches Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Searches</Text>
-          {recentSearches.map((item) => (
-            <TouchableOpacity key={item.id} activeOpacity={0.7}>
-              <Card style={styles.searchCard}>
-                <Card.Content style={styles.cardContent}>
-                  <View style={styles.iconContainer}>
-                    <Ionicons name="time" size={24} color="#FF8C3A" />
-                  </View>
+        {/* Playlist List - Modern 1 Column Design */}
+        <View style={styles.playlistList}>
+          {playlists.map((playlist) => (
+            <View key={playlist.id} style={styles.playlistItem}>
+              <TouchableOpacity
+                style={styles.playlistItemContent}
+                activeOpacity={0.7}
+                onPress={() => handlePlaylistPress(playlist)}
+              >
+                {/* Squircle Thumbnail with Gradient Overlay */}
+                <View style={styles.thumbnailContainer}>
+                  <Image
+                    source={{ uri: playlist.cover }}
+                    style={styles.thumbnail}
+                    resizeMode="cover"
+                  />
+                </View>
+
+                {/* Text Content + Icon Container */}
+                <View style={styles.contentRight}>
                   <View style={styles.textContainer}>
-                    <Text style={styles.songTitle}>{item.title}</Text>
-                    <Text style={styles.artistName}>{item.artist}</Text>
+                    <Text style={styles.playlistTitle} numberOfLines={1}>
+                      {playlist.title}
+                    </Text>
+                    <Text style={styles.playlistDescription} numberOfLines={1}>
+                      {playlist.description}
+                    </Text>
                   </View>
-                  <View style={styles.timeContainer}>
-                    <Text style={styles.timeText}>{item.time}</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#999" />
-                  </View>
-                </Card.Content>
-              </Card>
-            </TouchableOpacity>
+
+                  {/* Right Side: Menu Icon */}
+                  <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.7)" />
+                </View>
+              </TouchableOpacity>
+            </View>
           ))}
         </View>
       </ScrollView>
     </LinearGradient>
-  )
-}
+  );
+};
 
-export default SearchScreen
+export default SearchScreen;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1
+    flex: 1,
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 16,
-    paddingTop: 20,
+  headerSection: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
   },
   headerTitle: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontFamily: 'BebasNeue_400Regular',
+    fontSize: 42,
     color: '#FFFFFF',
-    marginBottom: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-    marginTop: 50
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 8,
   },
-  section: {
-    marginBottom: 24,
+  // Modern 1 Column List Styles
+  playlistList: {
+    paddingHorizontal: 16,
+    paddingBottom: 100,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 12,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+  playlistItem: {
+    flexDirection: 'row',
   },
-  searchCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    marginBottom: 12,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  cardContent: {
+  playlistItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    flex: 1,
+    paddingVertical: 16,
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FFE9D5',
-    justifyContent: 'center',
+  // Squircle Thumbnail
+  thumbnailContainer: {
+    position: 'relative',
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginRight: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+  },
+  // Content Right: Text + Icon with Border
+  contentRight: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
+    paddingBottom: 16,
   },
+  // Text Hierarchy
   textContainer: {
     flex: 1,
+    justifyContent: 'center',
+    marginRight: 16,
   },
-  songTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
+  playlistTitle: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 18,
+    color: '#FFFFFF',
+    marginBottom: 6,
+    letterSpacing: 0.3,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  artistName: {
-    fontSize: 14,
-    color: '#666',
+  playlistDescription: {
+    fontFamily: 'Rajdhani_600SemiBold',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.65)',
+    letterSpacing: 0.4,
   },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  timeText: {
-    fontSize: 12,
-    color: '#999',
-  },
-})
+});
