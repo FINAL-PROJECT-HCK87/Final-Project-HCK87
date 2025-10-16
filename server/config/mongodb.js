@@ -1,6 +1,6 @@
-import { MongoClient } from 'mongodb';
+const  {MongoClient}  = require('mongodb')
 
-const uri = process.env.URI_MONGODB;
+const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 let db = null
 
@@ -13,7 +13,9 @@ function run() {
     }
 }
 
-export function getDB() {
+function getDB() {
     if (!db) return run()
     return db
 }
+
+module.exports = {getDB}
