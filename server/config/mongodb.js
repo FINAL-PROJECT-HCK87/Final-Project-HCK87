@@ -6,7 +6,7 @@ let db = null
 
 function run() {
     try {
-        db = client.db('Melodix');
+        db = client.db(process.env.MONGODB_NAME);
         return db
     } catch (error) {
         console.log('Failed to connect to MongoDB', error)

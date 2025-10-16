@@ -7,7 +7,6 @@ const errorHandler = (err, req, res, next) => {
       error: 'The requested document does not exist'
     });
     case 'MongoNetworkError':
-    case 'MongooseServerSelectionError':
       return res.status(503).json({ 
       message: 'Database connection error',
       error: 'Unable to connect to MongoDB server'
