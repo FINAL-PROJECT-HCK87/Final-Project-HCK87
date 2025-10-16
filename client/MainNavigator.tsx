@@ -6,6 +6,7 @@ import HistoryScreen from './HistoryScreen';
 import HomeScreen from './HomeScreen';
 import PlaylistDetailScreen from './PlaylistDetailScreen';
 import BottomTabNavigator from './BottomTabNavigator';
+import SongResultDetail from './SongResultDetail';
 
 export type RootStackParamList = {
   LyricScreen: undefined;
@@ -14,12 +15,20 @@ export type RootStackParamList = {
   HomeScreen: undefined;
   MainTabs: undefined;
   PlaylistDetail: { playlist: any };
+  ResultDetailScreen: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 const MainNavigator = () => {
   return (
     <Stack.Navigator>
+      <Stack.Screen
+        name="ResultDetailScreen"
+        component={SongResultDetail}
+        options={{
+          headerShown: false,
+        }}
+      />
       <Stack.Screen
         name="MainTabs"
         component={BottomTabNavigator}
