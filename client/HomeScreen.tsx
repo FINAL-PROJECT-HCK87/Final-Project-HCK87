@@ -18,26 +18,22 @@ import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { useListening } from './contexts/ListeningContext';
 import { instance } from './utils/axios';
+import { useAuth } from './contexts/AuthContext';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const { deviceId } = useAuth();
   const { setIsListening } = useListening();
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
-
-  // Modal animation
   const modalScale = useRef(new Animated.Value(0)).current;
   const modalOpacity = useRef(new Animated.Value(0)).current;
   const modalTranslateY = useRef(new Animated.Value(-50)).current;
-
-  // Listening text animation
   const listeningOpacity = useRef(new Animated.Value(1)).current;
   const listeningScale = useRef(new Animated.Value(1)).current;
-
-  // Animation values
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const wave1 = useRef(new Animated.Value(0)).current;
@@ -49,6 +45,7 @@ const HomeScreen = () => {
   const visualizer4 = useRef(new Animated.Value(0)).current;
 
   const spectrumBars = useRef(Array.from({ length: 12 }, () => new Animated.Value(0))).current;
+  console.log(deviceId);
 
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
@@ -59,12 +56,10 @@ const HomeScreen = () => {
     });
   }, [isRecording, isIdentifying, navigation]);
 
-  // Sync listening state with context
   useEffect(() => {
     setIsListening(isRecording || isIdentifying);
   }, [isRecording, isIdentifying, setIsListening]);
 
-  // Listening text animation (for both recording and identifying)
   useEffect(() => {
     if (isRecording || isIdentifying) {
       Animated.loop(
@@ -101,7 +96,6 @@ const HomeScreen = () => {
     }
   }, [isRecording, isIdentifying]);
 
-  // Modal animation effect
   useEffect(() => {
     if (showModal) {
       // Animate in
@@ -167,7 +161,6 @@ const HomeScreen = () => {
     };
   }, []);
 
-  // Idle rotation animation and slow wave (always running when not recording/identifying)
   useEffect(() => {
     if (!isRecording && !isIdentifying) {
       rotateAnim.setValue(0);
@@ -234,7 +227,6 @@ const HomeScreen = () => {
     }
   }, [isRecording, isIdentifying]);
 
-  // Recording/Identifying animations
   useEffect(() => {
     if (isRecording || isIdentifying) {
       // Logo rotate fast
@@ -386,11 +378,8 @@ const HomeScreen = () => {
       setResult(null);
       setShowModal(false);
 
-      console.log('✅ Recording started, will auto-stop in 10 seconds');
-
       // Auto-stop after 10 seconds
       recordingTimerRef.current = setTimeout(async () => {
-        console.log('⏰ 10 seconds elapsed, stopping recording...');
         try {
           if (newRecording) {
             setIsRecording(false);
@@ -398,7 +387,6 @@ const HomeScreen = () => {
 
             await newRecording.stopAndUnloadAsync();
             const uri = newRecording.getURI();
-            console.log('Recording saved to:', uri);
 
             await Audio.setAudioModeAsync({
               allowsRecordingIOS: false,
@@ -434,115 +422,49 @@ const HomeScreen = () => {
 
   const identifySong = async (fileUri: string) => {
     try {
-      const AUDD_API_KEY = '91ee7b66da60b00851fedcd0edf1ccc7';
+      console.log('🎵 Sending audio to backend for recognition...');
 
       const formData = new FormData();
-      formData.append('file', {
+      formData.append('audio', {
         uri: fileUri,
         type: 'audio/m4a',
         name: 'recording.m4a',
       } as any);
-      formData.append('api_token', AUDD_API_KEY);
-      formData.append('return', 'apple_music,spotify');
 
-      console.log('🎵 Sending request to AudD...');
-
-      const response = await fetch('https://api.audd.io/', {
+      const response = await instance({
+        url: '/songs/recognize',
         method: 'POST',
-        body: formData,
+        data: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'x-device-id': deviceId,
+        },
+        timeout: 35000, // 35 second timeout
       });
 
-      const data = await response.json();
-      // const reslt = JSON.parse(data);
-      // response dari third party API
-      console.log('API Response:', JSON.stringify(data, null, 2));
+      console.log('✅ Recognition successful:', response.data);
 
-      if (data.status === 'success' && data.result) {
+      const songData = {
+        title: response.data.title || 'Unknown',
+        artist: response.data.artist || 'Unknown Artist',
+        coverArt: response.data.cover_art_url || null,
+        youtube: response.data.youtube || null,
+      };
 
-        console.log(JSON.stringify(data, null, 2), "<<<<<<<<< DATAAA")
-        const result = data.result;
-        const spotify = result.spotify;
-        const appleMusic = result.apple_music;
-        const isrc = spotify.id;
-        const title = spotify.name;
-        const artist = spotify.artists[0].name;
-        const album = spotify.album.name;
-        const cover_art_url = spotify.album.images[0].url;
-        const duration_ms = spotify.duration_ms;
-        const spotify_url = spotify.external_urls.spotify;
-        const apple_music_url = appleMusic.url;
-        const preview_url = spotify.preview_url || appleMusic.previews[0].url;
-        const release_date = spotify.album.release_date;
-        const genre = appleMusic.genreNames[0];
-
-        console.log('=== Song Data ===');
-        console.log('Spotify ID:', isrc);
-        console.log('Title:', title);
-        console.log('Artist:', artist);
-        console.log('Album:', album);
-        console.log('Cover Art URL:', cover_art_url);
-        console.log('Duration (ms):', duration_ms);
-        console.log('Spotify URL:', spotify_url);
-        console.log('Apple Music URL:', apple_music_url);
-        console.log('Preview URL:', preview_url);
-        console.log('Release Date:', release_date);
-        console.log('Genre:', genre);
-        console.log('================');
-
-        const postSong = await instance({
-          url : '/songs',
-          method : "POST",
-          data : {isrc, title, artist, album, cover_art_url, duration_ms : +duration_ms, spotify_url, apple_music_url, preview_url, release_date : new Date(release_date), genre}
-        });
-
-        console.log(postSong)
-
-
-        let coverArt = null;
-
-        if (spotify?.album?.images && spotify.album.images.length > 0) {
-          coverArt = spotify.album.images[0].url;
-        }
-
-        if (!coverArt && appleMusic?.artwork?.url) {
-          coverArt = appleMusic.artwork.url.replace('{w}', '600').replace('{h}', '600');
-        }
-
-        const youtubeUrl =
-          result.artist && result.title
-            ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
-                result.artist + ' ' + result.title
-              )}`
-            : null;
-
-        const songData = {
-          title: result.title || 'Unknown',
-          artist: result.artist || 'Unknown Artist',
-          coverArt: coverArt,
-          youtube: youtubeUrl,
-        };
-
-        setResult(songData);
-        setShowModal(true);
-
-        console.log('✅ Modal should now be visible');
-      } else {
-        // Show modal with "Song Not Found" message
-        setResult({
-          title: 'Song Not Found',
-          artist: 'Could not identify the song',
-          coverArt: null,
-          youtube: null,
-        });
-        setShowModal(true);
-      }
+      setResult(songData);
+      setShowModal(true);
     } catch (err: any) {
-      // Show modal with error message
+      console.error('❌ Recognition error:', err.message);
+
       let errorMessage = 'Failed to identify song';
-      if (err.message.includes('Network request timed out')) {
-        errorMessage = 'Network timeout. Please try again';
+
+      if (err.response) {
+        // Backend error response
+        errorMessage = err.response.data?.error || err.response.data?.message || errorMessage;
+      } else if (err.message.includes('timeout')) {
+        errorMessage = 'Request timeout. Please try again';
       } else if (err.message.includes('Network')) {
-        errorMessage = 'Network error. Check connection';
+        errorMessage = 'Network error. Check your connection';
       }
 
       setResult({
@@ -626,7 +548,6 @@ const HomeScreen = () => {
 
       if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
         const videoUri = pickerResult.assets[0].uri;
-        console.log('Video selected:', videoUri);
 
         setResult(null);
         setShowModal(false);

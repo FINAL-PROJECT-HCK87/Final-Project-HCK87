@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Read(//d/Hactiv8/Phase 3/latihan/coba/**)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Read(//d/Hactiv8/Phase 3/latihan/Final Project/Final-Project-HCK87/server/**)"
     ],
     "deny": [],
     "ask": []
