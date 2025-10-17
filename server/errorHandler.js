@@ -6,6 +6,11 @@ const errorHandler = (err, req, res, next) => {
       message: 'Document not found',
       error: 'The requested document does not exist'
     });
+    case 'No playlist found':
+      return res.status(404).json({ 
+      message: 'No playlist found',
+      error: 'The requested document does not exist'
+    });
     case 'MongoNetworkError':
       return res.status(503).json({ 
       message: 'Database connection error',
