@@ -459,44 +459,36 @@ const HomeScreen = () => {
 
       if (data.status === 'success' && data.result) {
 
-        console.log(JSON.stringify(data, null, 2), "<<<<<<<<< DATAAA")
-        const result = data.result;
-        const spotify = result.spotify;
-        const appleMusic = result.apple_music;
-        const isrc = spotify.id;
-        const title = spotify.name;
-        const artist = spotify.artists[0].name;
-        const album = spotify.album.name;
-        const cover_art_url = spotify.album.images[0].url;
-        const duration_ms = spotify.duration_ms;
-        const spotify_url = spotify.external_urls.spotify;
-        const apple_music_url = appleMusic.url;
-        const preview_url = spotify.preview_url || appleMusic.previews[0].url;
-        const release_date = spotify.album.release_date;
-        const genre = appleMusic.genreNames[0];
+        const result = data?.result || null;
+        const spotify = result?.spotify ?? null;
+        const appleMusic = result?.apple_music ?? null;
+        const isrc = spotify?.external_ids?.isrc ?? null
+        const spotifyId = spotify?.id ?? null;
+        const title = spotify?.name ?? null;
+        const artist = spotify?.artists?.[0]?.name ?? null; 
+        const album = spotify?.album?.name ?? null; 
+        const cover_art_url = spotify?.album?.images?.[0]?.url ?? null; 
+        const duration_ms = spotify?.duration_ms ?? null;
+        const spotify_url = spotify?.external_urls?.spotify ?? null; 
+        const apple_music_url = appleMusic?.url ?? null;
+        const preview_url = spotify?.preview_url || appleMusic?.previews?.[0]?.url || null; 
+        const release_date = spotify?.album?.release_date ?? null; 
+        const genre = appleMusic?.genreNames?.[0] ?? null; 
 
-        console.log('=== Song Data ===');
-        console.log('Spotify ID:', isrc);
-        console.log('Title:', title);
-        console.log('Artist:', artist);
-        console.log('Album:', album);
-        console.log('Cover Art URL:', cover_art_url);
-        console.log('Duration (ms):', duration_ms);
-        console.log('Spotify URL:', spotify_url);
-        console.log('Apple Music URL:', apple_music_url);
-        console.log('Preview URL:', preview_url);
-        console.log('Release Date:', release_date);
-        console.log('Genre:', genre);
-        console.log('================');
-
-        const postSong = await instance({
-          url : '/songs',
-          method : "POST",
-          data : {isrc, title, artist, album, cover_art_url, duration_ms : +duration_ms, spotify_url, apple_music_url, preview_url, release_date : new Date(release_date), genre}
-        });
-
-        console.log(postSong)
-
+        // console.log('=== Song Data ===');
+        // console.log('Spotify ID:', spotifyId);
+        // console.log(`ISRC :`, isrc)
+        // console.log('Title:', title);
+        // console.log('Artist:', artist);
+        // console.log('Album:', album);
+        // console.log('Cover Art URL:', cover_art_url);
+        // console.log('Duration (ms):', duration_ms);
+        // console.log('Spotify URL:', spotify_url);
+        // console.log('Apple Music URL:', apple_music_url);
+        // console.log('Preview URL:', preview_url);
+        // console.log('Release Date:', release_date);
+        // console.log('Genre:', genre);
+        // console.log('================');
 
         let coverArt = null;
 
@@ -515,6 +507,13 @@ const HomeScreen = () => {
               )}`
             : null;
 
+
+            const postSong = await instance({
+          url : '/songs',
+          method : "POST",
+          data : {isrc, spotifyId, title, artist, album, cover_art_url, duration_ms : +duration_ms, spotify_url, youtubeUrl, preview_url, release_date : new Date(release_date), genre}
+        });
+
         const songData = {
           title: result.title || 'Unknown',
           artist: result.artist || 'Unknown Artist',
@@ -525,7 +524,6 @@ const HomeScreen = () => {
         setResult(songData);
         setShowModal(true);
 
-        console.log('✅ Modal should now be visible');
       } else {
         // Show modal with "Song Not Found" message
         setResult({
