@@ -1,6 +1,15 @@
-import { StyleSheet, View, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
-import React, { use } from 'react';
-import { Card, Text } from 'react-native-paper';
+import {
+  StyleSheet,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Dimensions,
+  Alert,
+  Animated,
+} from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts, BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
@@ -11,104 +20,137 @@ import {
 } from '@expo-google-fonts/poppins';
 import { Rajdhani_700Bold, Rajdhani_600SemiBold } from '@expo-google-fonts/rajdhani';
 import { Inter_700Bold, Inter_600SemiBold } from '@expo-google-fonts/inter';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { instance } from './utils/axios';
+import { useAuth } from './contexts/AuthContext';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+interface HistoryItem {
+  _id: string;
+  title: string;
+  artist: string;
+  duration_ms: number;
+  cover_art_url: string;
+}
 
-// Dummy data for featured artists (horizontal slider with artist photos)
-const featuredItems = [
-  {
-    id: '1',
-    artist: 'The Weeknd',
-    image: 'https://i.scdn.co/image/ab6761610000e5eb214f3cf1cbe7139c1e26ffbb',
-  },
-  {
-    id: '2',
-    artist: 'Ed Sheeran',
-    image: 'https://i.scdn.co/image/ab6761610000e5ebe03a98785f3658f0b6461ec4',
-  },
-  {
-    id: '3',
-    artist: 'Dua Lipa',
-    image: 'https://i.scdn.co/image/ab6761610000e5eb214f3cf1cbe7139c1e26ffbb',
-  },
-  {
-    id: '4',
-    artist: 'Justin Bieber',
-    image: 'https://i.scdn.co/image/ab6761610000e5eb8ae7f2aaa9817a704a87ea36',
-  },
-  {
-    id: '5',
-    artist: 'Olivia Rodrigo',
-    image: 'https://i.scdn.co/image/ab6761610000e5ebe03a98785f3658f0b6461ec4',
-  },
-];
+interface ArtistItem {
+  _id: string;
+  name: string;
+  slug: string;
+  image_url: string;
+}
 
-// Dummy data for history with album covers
-const dummyHistory = [
-  {
-    id: '1',
-    title: 'Blinding Lights',
-    artist: 'The Weeknd',
-    duration: '3:20',
-    cover: 'https://i.scdn.co/image/ab67616d0000b273ef017e899c0547766997d874',
-  },
-  {
-    id: '2',
-    title: 'Shape of You',
-    artist: 'Ed Sheeran',
-    duration: '3:53',
-    cover: 'https://i.scdn.co/image/ab67616d0000b273ba5db46f4b838ef6027e6f96',
-  },
-  {
-    id: '3',
-    title: 'Levitating',
-    artist: 'Dua Lipa',
-    duration: '3:23',
-    cover: 'https://i.scdn.co/image/ab67616d0000b273be841ba4bc24340152e3a79a',
-  },
-  {
-    id: '4',
-    title: 'Save Your Tears',
-    artist: 'The Weeknd',
-    duration: '3:35',
-    cover: 'https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36',
-  },
-  {
-    id: '5',
-    title: 'Peaches',
-    artist: 'Justin Bieber',
-    duration: '3:18',
-    cover: 'https://i.scdn.co/image/ab67616d0000b273e6f407c7f3a0ec98845e4431',
-  },
-  {
-    id: '6',
-    title: 'drivers license',
-    artist: 'Olivia Rodrigo',
-    duration: '4:02',
-    cover: 'https://i.scdn.co/image/ab67616d0000b273a91c10fe9472d9bd89802e5a',
-  },
-  {
-    id: '7',
-    title: 'good 4 u',
-    artist: 'Olivia Rodrigo',
-    duration: '2:58',
-    cover: 'https://i.scdn.co/image/ab67616d0000b273a91c10fe9472d9bd89802e5a',
-  },
-  {
-    id: '8',
-    title: 'Stay',
-    artist: 'The Kid LAROI & Justin Bieber',
-    duration: '2:21',
-    cover: 'https://i.scdn.co/image/ab67616d0000b273e46a155e6c8c5fb41e8fc875',
-  },
-];
 interface HistoryScreenProps {
   navigation?: any;
 }
 
 const HistoryScreen = () => {
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [artists, setArtists] = useState<ArtistItem[]>([]);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+  const { deviceId } = useAuth();
   const navigation = useNavigation<HistoryScreenProps['navigation']>();
+
+  const fetchHistory = async () => {
+    try {
+      const response = await instance({
+        method: 'GET',
+        url: '/users/search-history',
+        headers: {
+          'x-device-id': deviceId,
+        },
+      });
+      setHistory(response.data.search_history);
+    } catch (error) {
+      console.error('Error fetching search history:', error);
+    }
+  };
+
+  const fetchArtists = async () => {
+    try {
+      const response = await instance({
+        method: 'GET',
+        url: '/users/artists-from-history',
+        headers: {
+          'x-device-id': deviceId,
+        },
+      });
+      setArtists(response.data.artists);
+    } catch (error) {
+      console.error('Error fetching artists:', error);
+    }
+  };
+
+  const formatDuration = (durationMs: number) => {
+    const minutes = Math.floor(durationMs / 60000);
+    const seconds = Math.floor((durationMs % 60000) / 1000);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
+  const handleDeleteItem = async (songId: string) => {
+    Alert.alert('Delete Song', 'Are you sure you want to remove this song from history?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await instance({
+              method: 'DELETE',
+              url: `/users/search-history/${songId}`,
+              headers: {
+                'x-device-id': deviceId,
+              },
+            });
+            // Refresh both history and artists
+            fetchHistory();
+            fetchArtists();
+          } catch (error) {
+            console.error('Error deleting history item:', error);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteAll = () => {
+    Alert.alert(
+      'Clear All History',
+      'Are you sure you want to clear all your search history? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await instance({
+                method: 'DELETE',
+                url: '/users/search-history',
+                headers: {
+                  'x-device-id': deviceId,
+                },
+              });
+              // Refresh both history and artists
+              fetchHistory();
+              fetchArtists();
+            } catch (error) {
+              console.error('Error clearing history:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchHistory();
+      fetchArtists();
+    }, [])
+  );
 
   let [fontsLoaded] = useFonts({
     BebasNeue_400Regular,
@@ -131,76 +173,145 @@ const HistoryScreen = () => {
       locations={[0, 0.3, 0.5, 0.7, 1]}
       style={styles.container}
     >
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Horizontal Slider for Featured Albums/Artists */}
-        <View style={styles.featuredSection}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.featuredScrollContent}
-            snapToInterval={width * 0.42}
-            decelerationRate="fast"
-          >
-            {featuredItems.map((item, index) => (
-              <TouchableOpacity
-                key={item.id}
-                style={[styles.featuredItem, index === 0 && styles.featuredItemFirst]}
-                activeOpacity={0.8}
-              >
-                <Image
-                  source={{ uri: item.image }}
-                  style={styles.featuredImage}
-                  resizeMode="cover"
-                />
-                {/* Dark overlay untuk membuat tulisan lebih timbul */}
-                <View style={styles.featuredOverlay} />
-                <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.85)']}
-                  style={styles.featuredGradient}
-                >
-                  <Text style={styles.featuredArtist} numberOfLines={1}>
-                    {item.artist}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Your History Section */}
-        <View style={styles.historySection}>
-          <Text style={styles.sectionTitle}>Your History</Text>
-
-          {dummyHistory.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('ResultDetailScreen')}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={scrollEnabled}
+      >
+        {/* Horizontal Slider for Artists from Search History */}
+        {artists.length > 0 && (
+          <View style={styles.featuredSection}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.featuredScrollContent}
+              snapToInterval={width * 0.42}
+              decelerationRate="fast"
             >
-              <View style={styles.historyItem}>
-                <View style={styles.historyItemLeft}>
+              {artists.map((item, index) => (
+                <TouchableOpacity
+                  key={item._id}
+                  style={[styles.featuredItem, index === 0 && styles.featuredItemFirst]}
+                  activeOpacity={0.8}
+                >
                   <Image
-                    source={{ uri: item.cover }}
-                    style={styles.albumCover}
+                    source={{ uri: item.image_url || 'https://via.placeholder.com/200' }}
+                    style={styles.featuredImage}
                     resizeMode="cover"
                   />
-                  <View style={styles.historyTextContainer}>
-                    <Text style={styles.historyTitle} numberOfLines={1}>
-                      {item.title}
+                  {/* Dark overlay untuk membuat tulisan lebih timbul */}
+                  <View style={styles.featuredOverlay} />
+                  <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.85)']}
+                    style={styles.featuredGradient}
+                  >
+                    <Text style={styles.featuredArtist} numberOfLines={1}>
+                      {item.name}
                     </Text>
-                    <Text style={styles.historyArtist} numberOfLines={1}>
-                      {item.artist}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.historyItemRight}>
-                  <Text style={styles.historyDuration}>{item.duration}</Text>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.6)" />
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Your History Section - Only show if there's history */}
+        {history.length === 0 ? (
+          <View style={styles.emptyStateWrapper}>
+            <View style={styles.emptyContainer}>
+              <Ionicons name="musical-notes-outline" size={64} color="rgba(0,0,0,0.3)" />
+              <Text style={styles.emptyText}>No history yet</Text>
+              <Text style={styles.emptySubtext}>Start identifying songs to see them here</Text>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.historySection}>
+            <View style={styles.historyHeader}>
+              <Text style={styles.sectionTitle}>Your History</Text>
+              <TouchableOpacity
+                style={styles.deleteAllButton}
+                onPress={handleDeleteAll}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="trash-outline" size={20} color="#FF4444" />
+                <Text style={styles.deleteAllText}>Clear All</Text>
+              </TouchableOpacity>
+            </View>
+
+            {history.map((item) => {
+              const renderRightActions = (
+                progress: Animated.AnimatedInterpolation<number>,
+                dragX: Animated.AnimatedInterpolation<number>
+              ) => {
+                const translateX = progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [100, 0],
+                  extrapolate: 'clamp',
+                });
+
+                return (
+                  <Animated.View
+                    style={[
+                      styles.deleteButtonContainer,
+                      {
+                        transform: [{ translateX }],
+                      },
+                    ]}
+                  >
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteItem(item._id)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="trash" size={24} color="#FFFFFF" />
+                      <Text style={styles.deleteButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              };
+
+              return (
+                <Swipeable
+                  key={item._id}
+                  renderRightActions={renderRightActions}
+                  overshootRight={false}
+                  onSwipeableOpen={() => setScrollEnabled(false)}
+                  onSwipeableClose={() => setScrollEnabled(true)}
+                >
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => navigation.navigate('ResultDetailScreen')}
+                    style={styles.rowFront}
+                  >
+                    <View style={styles.historyItem}>
+                      <View style={styles.historyItemLeft}>
+                        <Image
+                          source={{ uri: item.cover_art_url }}
+                          style={styles.albumCover}
+                          resizeMode="cover"
+                        />
+                        <View style={styles.historyTextContainer}>
+                          <Text style={styles.historyTitle} numberOfLines={1}>
+                            {item.title}
+                          </Text>
+                          <Text style={styles.historyArtist} numberOfLines={1}>
+                            {item.artist}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.historyItemRight}>
+                        <Text style={styles.historyDuration}>
+                          {formatDuration(item.duration_ms)}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.6)" />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </Swipeable>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
     </LinearGradient>
   );
@@ -274,16 +385,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 100,
   },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   sectionTitle: {
     fontFamily: 'BebasNeue_400Regular',
     fontSize: 38,
     color: '#000000ff',
-    marginBottom: 24,
     letterSpacing: 3,
     textTransform: 'uppercase',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 8,
+  },
+  deleteAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 0,
+    gap: 6,
+  },
+  deleteAllText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+    color: '#FF4444',
+    letterSpacing: 0.3,
   },
   historyItem: {
     flexDirection: 'row',
@@ -292,6 +423,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 2,
     borderBottomColor: 'rgba(0,0,0,0.12)',
+    backgroundColor: 'transparent',
   },
   historyItemLeft: {
     flexDirection: 'row',
@@ -315,22 +447,81 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     letterSpacing: 0.5,
   },
+
   historyArtist: {
     fontFamily: 'Rajdhani_600SemiBold',
     fontSize: 14,
     color: '#000000ff',
     letterSpacing: 0.5,
   },
+
   historyItemRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
+
   historyDuration: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 14,
     color: '#000000ff',
     letterSpacing: 0.5,
     marginRight: 4,
+  },
+  // Swipe List Styles
+  rowFront: {
+    backgroundColor: 'transparent',
+  },
+
+  deleteButtonContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 90,
+    height: '100%',
+  },
+
+  deleteButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 90,
+    height: 100,
+    backgroundColor: '#FF4444',
+    borderRadius: 0,
+    gap: 6,
+  },
+
+  deleteButtonText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 12,
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  // Empty State
+  emptyStateWrapper: {
+    height: height - 100, // Full screen height minus some padding
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+
+  emptyText: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 20,
+    color: 'rgba(0, 0, 0, 0.6)',
+    marginTop: 16,
+    letterSpacing: 0.5,
+  },
+
+  emptySubtext: {
+    fontFamily: 'Rajdhani_600SemiBold',
+    fontSize: 15,
+    color: 'rgba(0, 0, 0, 0.5)',
+    marginTop: 8,
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
 });

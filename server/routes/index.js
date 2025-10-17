@@ -1,12 +1,11 @@
-const router = require('express').Router()
-const song = require('./songs')
-
+const router = require('express').Router();
+const song = require('./songs');
+const user = require('./users');
 
 router.get('/', (req, res) => {
-  console.log("MASUK SINI ANJING")
-   res.status(200).json({ message: 'Welcome to Melodix API' })
-})
-router.use('/songs', song)
+  res.status(200).json({ message: 'Welcome to Melodix API' });
+});
+router.use('/songs', song);
+router.use('/users', user);
 
-
-module.exports = router
+module.exports = router;
