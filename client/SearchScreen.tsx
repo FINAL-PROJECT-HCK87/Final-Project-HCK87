@@ -1,11 +1,12 @@
 import { StyleSheet, View, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts, BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
 import { Poppins_700Bold, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
 import { Rajdhani_600SemiBold } from '@expo-google-fonts/rajdhani';
+import { instance } from './utils/axios';
 
 const { width } = Dimensions.get('window');
 
@@ -66,6 +67,8 @@ const playlists = [
 ];
 
 const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
+  const [topSongs, setTopSongs] = useState<any[]>([]);
+
   let [fontsLoaded] = useFonts({
     BebasNeue_400Regular,
     Poppins_700Bold,
@@ -73,12 +76,35 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
     Rajdhani_600SemiBold,
   });
 
+  useEffect(() => {
+    fetchTopSongs();
+  }, []);
+
+  const fetchTopSongs = async () => {
+    try {
+      const response = await instance({
+        method: 'GET',
+        url: '/songs/top/popular',
+      });
+
+      if (response.data && response.data.top_songs) {
+        setTopSongs(response.data.top_songs);
+      }
+    } catch (err: any) {
+      console.error('Error fetching top songs:', err);
+    }
+  };
+
   if (!fontsLoaded) {
     return null;
   }
 
   const handlePlaylistPress = (playlist: any) => {
     navigation?.navigate('PlaylistDetail', { playlist });
+  };
+
+  const handleTopSongPress = (songId: string) => {
+    navigation?.navigate('ResultDetailScreen', { songId });
   };
 
   return (
@@ -90,7 +116,47 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.headerSection}>
-          <Text style={styles.headerTitle}>Playlist for you</Text>
+          <Text style={styles.headerTitle}>Discover</Text>
+        </View>
+
+        {/* Top 4 Most Searched Songs */}
+        {topSongs.length > 0 && (
+          <View style={styles.topSongsSection}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="flame" size={22} color="#FF9F4D" />
+              <Text style={styles.sectionTitle}>Trending Now</Text>
+            </View>
+            <View style={styles.topSongsList}>
+              {topSongs.map((song, index) => (
+                <TouchableOpacity
+                  key={song._id}
+                  style={styles.topSongItem}
+                  activeOpacity={0.7}
+                  onPress={() => handleTopSongPress(song._id)}
+                >
+                  <View style={styles.topSongRank}>
+                    <Text style={styles.topSongRankText}>{index + 1}</Text>
+                  </View>
+                  <View style={styles.topSongContent}>
+                    <Image source={{ uri: song.cover_art_url }} style={styles.topSongCover} />
+                    <View style={styles.topSongInfo}>
+                      <Text style={styles.topSongTitle} numberOfLines={2}>
+                        {song.title}
+                      </Text>
+                      <Text style={styles.topSongArtist} numberOfLines={1}>
+                        {song.artist}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Section Title for Playlists */}
+        <View style={styles.playlistSectionHeader}>
+          <Text style={styles.playlistSectionTitle}>Playlists for you</Text>
         </View>
 
         {/* Playlist List - Modern 1 Column Design */}
@@ -157,6 +223,99 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 8,
+  },
+  // Top Songs Section
+  topSongsSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 20,
+    color: '#000000',
+    marginLeft: 8,
+    letterSpacing: 0.3,
+  },
+  topSongsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  topSongItem: {
+    width: (width - 64) / 2,
+    position: 'relative',
+    backgroundColor: 'rgba(73, 71, 71, 0.2)',
+    borderRadius: 16,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(253, 253, 253, 0.84)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  topSongRank: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FF9F4D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#FF9F4D',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  topSongRankText: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  topSongContent: {
+    gap: 12,
+  },
+  topSongCover: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+  },
+  topSongInfo: {
+    gap: 4,
+  },
+  topSongTitle: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 14,
+    color: '#000000',
+    lineHeight: 18,
+  },
+  topSongArtist: {
+    fontFamily: 'Rajdhani_600SemiBold',
+    fontSize: 13,
+    color: 'rgba(0, 0, 0, 0.6)',
+    lineHeight: 16,
+  },
+  // Playlist Section Title
+  playlistSectionHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  playlistSectionTitle: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 20,
+    color: '#000000',
+    letterSpacing: 0.3,
   },
   // Modern 1 Column List Styles
   playlistList: {
