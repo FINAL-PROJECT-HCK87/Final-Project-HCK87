@@ -452,7 +452,7 @@ class Controller {
 
       const collection = Controller.getCollection();
       const songData = await collection.findOne({ _id: new ObjectId(songId) });
-      console.log(songData, '<<<<<<<');
+      // console.log(songData, '<<<<<<<');
 
       if (!songData) {
         return res.status(404).json({ message: 'Song not found' });
