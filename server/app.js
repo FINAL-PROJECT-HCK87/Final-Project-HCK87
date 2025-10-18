@@ -3,7 +3,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 const express = require('express');
 const router = require('./routes');
-const erroHandler = require('./erroHandler');
+const errorHandler = require('./errorHandler');
 const app = express();
 
 app.use(require('cors')());
@@ -14,6 +14,6 @@ console.log('masuk');
 
 app.use(router);
 
-app.use(erroHandler);
+app.use(errorHandler);
 
 module.exports = app;
