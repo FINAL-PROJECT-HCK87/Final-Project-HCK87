@@ -251,18 +251,36 @@ const HistoryScreen = () => {
     });
   };
 
-  const handleCreatePlaylist = () => {
+  const handleCreatePlaylist = async () => {
     if (playlistName.trim().length === 0) {
       Alert.alert('Error', 'Please enter a playlist name');
       return;
     }
 
     // TODO: API call to create playlist
-    console.log('Creating playlist:', { name: playlistName });
-
-    // For now, just close modal
+    try {
+      console.log(playlistName)
+      const response = await instance({
+        method: 'POST',
+        url: '/playlists/create',
+        headers: {
+          'x-device-id': deviceId
+        },
+        data: {playlistName}
+      });
+      
+      // console.log(response)
+      // console.log('Creating playlist:', { name: playlistName });
+    
+    
+      // For now, just close modal
     closeCreateModal();
     Alert.alert('Success', `Playlist "${playlistName}" created!`);
+    } catch (error:unknown) {
+      console.log(error as string)
+    }
+
+
   };
 
   useFocusEffect(
@@ -288,7 +306,7 @@ const HistoryScreen = () => {
   if (!fontsLoaded) {
     return null;
   }
-  console.log(history);
+  // console.log(history);
   return (
     <LinearGradient
       colors={['#FFE9D5', '#FFD4A3', '#FFB366', '#FF9F4D', '#FF8C3A']}
