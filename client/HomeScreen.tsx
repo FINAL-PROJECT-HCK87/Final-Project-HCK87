@@ -445,6 +445,7 @@ const HomeScreen = () => {
       console.log('✅ Recognition successful:', response.data);
 
       const songData = {
+        _id: response.data._id, // Add song ID for navigation
         title: response.data.title || 'Unknown',
         artist: response.data.artist || 'Unknown Artist',
         coverArt: response.data.cover_art_url || null,
@@ -880,8 +881,19 @@ const HomeScreen = () => {
             ]}
           >
             <TouchableOpacity
-              activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
+              activeOpacity={0.95}
+              onPress={(e) => {
+                e.stopPropagation();
+                // Navigate to SongDetail if we have a valid song ID
+                if (
+                  result?._id &&
+                  result?.title !== 'Error' &&
+                  result?.title !== 'Song Not Found'
+                ) {
+                  setShowModal(false);
+                  navigation.navigate('ResultDetailScreen', { songId: result._id });
+                }
+              }}
               style={styles.modalContent}
             >
               <View style={styles.songCard}>
@@ -911,7 +923,13 @@ const HomeScreen = () => {
                 </View>
 
                 {result?.youtube && (
-                  <TouchableOpacity style={styles.youtubeButton} onPress={openYoutube}>
+                  <TouchableOpacity
+                    style={styles.youtubeButton}
+                    onPress={(e) => {
+                      e.stopPropagation(); // Prevent navigation when YouTube button is pressed
+                      openYoutube();
+                    }}
+                  >
                     <Ionicons name="logo-youtube" size={24} color="#FFF" />
                   </TouchableOpacity>
                 )}

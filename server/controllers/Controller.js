@@ -128,94 +128,6 @@ class Controller {
     const result = await collection.insertOne(newArtist);
     return { _id: result.insertedId, ...newArtist };
   }
-  static async findAll(req, res, next) {
-    try {
-      res.status(200).json({ message: 'AKU JALAN' });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  // Test endpoints for Spotify API
-  static async testSpotifyToken(req, res, next) {
-    try {
-      const token = await Controller.getSpotifyToken();
-      if (token) {
-        return res.status(200).json({
-          success: true,
-          message: 'Spotify token generated successfully',
-          token: token.substring(0, 20) + '...', // Show only first 20 chars for security
-        });
-      } else {
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to generate Spotify token. Check your CLIENT_ID and CLIENT_SECRET',
-        });
-      }
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  static async testSpotifyArtist(req, res, next) {
-    try {
-      const { artist_name } = req.query;
-      if (!artist_name) {
-        return res.status(400).json({ message: 'artist_name query parameter is required' });
-      }
-
-      const token = await Controller.getSpotifyToken();
-      if (!token) {
-        return res.status(500).json({ message: 'Failed to get Spotify token' });
-      }
-
-      const artistData = await Controller.searchSpotifyArtist(artist_name, token);
-      if (artistData) {
-        return res.status(200).json({
-          success: true,
-          message: 'Artist found on Spotify',
-          data: artistData,
-        });
-      } else {
-        return res.status(404).json({
-          success: false,
-          message: 'Artist not found on Spotify',
-        });
-      }
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  static async testSpotifyTrack(req, res, next) {
-    try {
-      const { isrc } = req.query;
-      if (!isrc) {
-        return res.status(400).json({ message: 'isrc query parameter is required' });
-      }
-
-      const token = await Controller.getSpotifyToken();
-      if (!token) {
-        return res.status(500).json({ message: 'Failed to get Spotify token' });
-      }
-
-      const trackData = await Controller.searchSpotifyTrack(isrc, token);
-      if (trackData) {
-        return res.status(200).json({
-          success: true,
-          message: 'Track found on Spotify',
-          data: trackData,
-        });
-      } else {
-        return res.status(404).json({
-          success: false,
-          message: 'Track not found on Spotify with this ISRC',
-        });
-      }
-    } catch (error) {
-      next(error);
-    }
-  }
 
   static async findOrCreateSong(req, res, next) {
     try {
@@ -282,7 +194,6 @@ class Controller {
           ...formData.getHeaders(),
         },
         data: formData,
-        timeout: 30000,
       });
 
       if (!shazamResponse.data || !shazamResponse.data.track) {
@@ -526,6 +437,127 @@ class Controller {
         });
       }
 
+      next(error);
+    }
+  }
+
+  static async songById(req, res, next) {
+    try {
+      const songId = req.params.id;
+
+      // Validate ObjectId format
+      if (!ObjectId.isValid(songId)) {
+        return res.status(400).json({ message: 'Invalid song ID format' });
+      }
+
+      const collection = Controller.getCollection();
+      const songData = await collection.findOne({ _id: new ObjectId(songId) });
+      console.log(songData, '<<<<<<<');
+
+      if (!songData) {
+        return res.status(404).json({ message: 'Song not found' });
+      }
+      // Populate artist data
+      let artistsData = [];
+      let artistImageUrl = '';
+      if (songData.artist_ids && songData.artist_ids.length > 0) {
+        const artistsCollection = Controller.getArtistsCollection();
+        artistsData = await artistsCollection.find({ _id: { $in: songData.artist_ids } }).toArray();
+        // Use first artist's image as primary
+        artistImageUrl = artistsData[0]?.image_url || '';
+      }
+      const artistDisplay = songData.artist_subtitle || 'Unknown Artist';
+      return res.status(200).json({
+        _id: songData._id,
+        isrc: songData.isrc,
+        title: songData.title,
+        artist: artistDisplay,
+        artist_ids: songData.artist_ids,
+        artist_image_url: artistImageUrl,
+        album: songData.album,
+        cover_art_url: songData.cover_art_url,
+        duration_ms: songData.duration_ms,
+        spotify_url: songData.spotify_url,
+        spotify_uri: songData.spotify_uri || '',
+        apple_music_url: songData.apple_music_url,
+        preview_url: songData.preview_url,
+        youtube_url: songData.youtube_url,
+        genre: songData.genre,
+        release_date: songData.release_date,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getTopSongs(req, res, next) {
+    try {
+      const db = getDB();
+      const usersCollection = db.collection('users');
+      const songsCollection = Controller.getCollection();
+      const artistsCollection = Controller.getArtistsCollection();
+
+      // Aggregate all search histories from all users
+      const allUsers = await usersCollection.find({}).toArray();
+
+      // Count frequency of each song across all users
+      const songCounts = {};
+      allUsers.forEach((user) => {
+        if (user.search_history && Array.isArray(user.search_history)) {
+          user.search_history.forEach((songId) => {
+            const songIdStr = String(songId);
+            songCounts[songIdStr] = (songCounts[songIdStr] || 0) + 1;
+          });
+        }
+      });
+
+      // Sort by count and get top 4
+      const topSongIds = Object.entries(songCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([songId]) => new ObjectId(songId));
+
+      if (topSongIds.length === 0) {
+        return res.status(200).json({ top_songs: [] });
+      }
+
+      // Fetch song details
+      const topSongs = await songsCollection.find({ _id: { $in: topSongIds } }).toArray();
+
+      // Populate artist data for each song
+      const topSongsWithArtists = await Promise.all(
+        topSongs.map(async (song) => {
+          let artistImageUrl = '';
+          if (song.artist_ids && song.artist_ids.length > 0) {
+            const artistsData = await artistsCollection
+              .find({ _id: { $in: song.artist_ids } })
+              .toArray();
+            artistImageUrl = artistsData[0]?.image_url || '';
+          }
+
+          const artistDisplay = song.artist_subtitle || 'Unknown Artist';
+
+          return {
+            _id: song._id,
+            title: song.title,
+            artist: artistDisplay,
+            artist_image_url: artistImageUrl,
+            cover_art_url: song.cover_art_url,
+            search_count: songCounts[song._id.toString()],
+          };
+        })
+      );
+
+      // Sort by original order (by count)
+      const sortedTopSongs = topSongsWithArtists.sort((a, b) => {
+        const indexA = topSongIds.findIndex((id) => id.toString() === a._id.toString());
+        const indexB = topSongIds.findIndex((id) => id.toString() === b._id.toString());
+        return indexA - indexB;
+      });
+
+      return res.status(200).json({ top_songs: sortedTopSongs });
+    } catch (error) {
+      console.error('❌ Error in getTopSongs:', error.message);
       next(error);
     }
   }

@@ -7,11 +7,16 @@ import {
   Dimensions,
   Alert,
   Animated,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { useFonts, BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
 import {
   Poppins_700Bold,
@@ -24,7 +29,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { instance } from './utils/axios';
 import { useAuth } from './contexts/AuthContext';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const { width, height } = Dimensions.get('window');
 interface HistoryItem {
@@ -46,12 +50,78 @@ interface HistoryScreenProps {
   navigation?: any;
 }
 
+interface PlaylistItem {
+  _id: string;
+  name: string;
+  description: string;
+  song_count: number;
+  cover_images: string[];
+}
+
 const HistoryScreen = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [artists, setArtists] = useState<ArtistItem[]>([]);
+  const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
   const [scrollEnabled, setScrollEnabled] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [playlistName, setPlaylistName] = useState('');
   const { deviceId } = useAuth();
   const navigation = useNavigation<HistoryScreenProps['navigation']>();
+
+  // Modal animation values
+  const modalScale = useRef(new Animated.Value(0)).current;
+  const modalOpacity = useRef(new Animated.Value(0)).current;
+
+  // Dummy playlists data - mencontohkan semua kondisi
+  const dummyPlaylists: PlaylistItem[] = [
+    {
+      _id: '1',
+      name: 'Empty Playlist',
+      description: 'No songs yet',
+      song_count: 0,
+      cover_images: [],
+    },
+    {
+      _id: '2',
+      name: 'Single Song',
+      description: 'Only one track',
+      song_count: 1,
+      cover_images: ['https://i.scdn.co/image/ab67616d0000b273e787cffec20aa2a396a61647'],
+    },
+    {
+      _id: '3',
+      name: 'Duo Playlist',
+      description: 'Two favorites',
+      song_count: 2,
+      cover_images: [
+        'https://i.scdn.co/image/ab67616d0000b2733b5e11ca1b063583df9492db',
+        'https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856',
+      ],
+    },
+    {
+      _id: '4',
+      name: 'Trio Mix',
+      description: 'Three songs',
+      song_count: 3,
+      cover_images: [
+        'https://i.scdn.co/image/ab67616d0000b273907bd84d73508e91ab1e0269',
+        'https://i.scdn.co/image/ab67616d0000b273fc915b69600dce2991a61f13',
+        'https://i.scdn.co/image/ab67616d0000b2734f89844c76d620ff098ef5c6',
+      ],
+    },
+    {
+      _id: '5',
+      name: 'Full Grid',
+      description: '4 or more songs',
+      song_count: 12,
+      cover_images: [
+        'https://i.scdn.co/image/ab67616d0000b273da5d5aeeabacacc1263c0f4b',
+        'https://i.scdn.co/image/ab67616d0000b273a048415db06a5b6fa7ec4e1a',
+        'https://i.scdn.co/image/ab67616d0000b273ba5db46f4b838ef6027e6f96',
+        'https://i.scdn.co/image/ab67616d0000b273e787cffec20aa2a396a61647',
+      ],
+    },
+  ];
 
   const fetchHistory = async () => {
     try {
@@ -145,10 +215,62 @@ const HistoryScreen = () => {
     );
   };
 
+  // Handle create modal animation
+  const openCreateModal = () => {
+    setShowCreateModal(true);
+    Animated.parallel([
+      Animated.spring(modalScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(modalOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeCreateModal = () => {
+    Animated.parallel([
+      Animated.timing(modalScale, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(modalOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowCreateModal(false);
+      setPlaylistName('');
+    });
+  };
+
+  const handleCreatePlaylist = () => {
+    if (playlistName.trim().length === 0) {
+      Alert.alert('Error', 'Please enter a playlist name');
+      return;
+    }
+
+    // TODO: API call to create playlist
+    console.log('Creating playlist:', { name: playlistName });
+
+    // For now, just close modal
+    closeCreateModal();
+    Alert.alert('Success', `Playlist "${playlistName}" created!`);
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchHistory();
       fetchArtists();
+      // Set dummy playlists for now
+      setPlaylists(dummyPlaylists);
     }, [])
   );
 
@@ -166,7 +288,7 @@ const HistoryScreen = () => {
   if (!fontsLoaded) {
     return null;
   }
-
+  console.log(history);
   return (
     <LinearGradient
       colors={['#FFE9D5', '#FFD4A3', '#FFB366', '#FF9F4D', '#FF8C3A']}
@@ -178,37 +300,124 @@ const HistoryScreen = () => {
         showsVerticalScrollIndicator={false}
         scrollEnabled={scrollEnabled}
       >
-        {/* Horizontal Slider for Artists from Search History */}
-        {artists.length > 0 && (
-          <View style={styles.featuredSection}>
+        {/* Playlists Section - PALING ATAS */}
+        {playlists.length > 0 && (
+          <View style={styles.playlistsSection}>
+            <View style={styles.playlistsHeader}>
+              <Text style={styles.playlistsSectionTitle}>My Playlists</Text>
+              <TouchableOpacity
+                style={styles.createPlaylistButton}
+                activeOpacity={0.8}
+                onPress={openCreateModal}
+              >
+                <Ionicons name="add-circle" size={24} color="#FF9F4D" />
+                <Text style={styles.createPlaylistText}>Create</Text>
+              </TouchableOpacity>
+            </View>
+
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.featuredScrollContent}
-              snapToInterval={width * 0.42}
-              decelerationRate="fast"
+              contentContainerStyle={styles.playlistScrollContent}
             >
-              {artists.map((item, index) => (
+              {playlists.map((playlist, index) => (
                 <TouchableOpacity
-                  key={item._id}
-                  style={[styles.featuredItem, index === 0 && styles.featuredItemFirst]}
-                  activeOpacity={0.8}
+                  key={playlist._id}
+                  style={[styles.playlistCard, index === 0 && styles.playlistCardFirst]}
+                  activeOpacity={0.85}
                 >
-                  <Image
-                    source={{ uri: item.image_url || 'https://via.placeholder.com/200' }}
-                    style={styles.featuredImage}
-                    resizeMode="cover"
-                  />
-                  {/* Dark overlay untuk membuat tulisan lebih timbul */}
-                  <View style={styles.featuredOverlay} />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.85)']}
-                    style={styles.featuredGradient}
-                  >
-                    <Text style={styles.featuredArtist} numberOfLines={1}>
-                      {item.name}
+                  {/* Cover Grid - Dynamic based on song count */}
+                  <View style={styles.playlistCoverContainer}>
+                    {playlist.song_count === 0 ? (
+                      /* No songs - Default melodix.png */
+                      <Image
+                        source={require('./assets/melodix.png')}
+                        style={styles.coverSingle}
+                        resizeMode="cover"
+                      />
+                    ) : playlist.song_count === 1 ? (
+                      /* 1 song - Single full image */
+                      <Image
+                        source={{ uri: playlist.cover_images[0] }}
+                        style={styles.coverSingle}
+                        resizeMode="cover"
+                      />
+                    ) : playlist.song_count === 2 ? (
+                      /* 2 songs - Split vertical */
+                      <View style={styles.coverGrid}>
+                        <View style={styles.coverHalfVertical}>
+                          <Image
+                            source={{ uri: playlist.cover_images[0] }}
+                            style={styles.coverGridImage}
+                            resizeMode="cover"
+                          />
+                        </View>
+                        <View style={styles.coverHalfVertical}>
+                          <Image
+                            source={{ uri: playlist.cover_images[1] }}
+                            style={styles.coverGridImage}
+                            resizeMode="cover"
+                          />
+                        </View>
+                      </View>
+                    ) : playlist.song_count === 3 ? (
+                      /* 3 songs - 1 full left, 2 split right */
+                      <View style={styles.coverGrid}>
+                        <View style={styles.coverFullLeft}>
+                          <Image
+                            source={{ uri: playlist.cover_images[0] }}
+                            style={styles.coverGridImage}
+                            resizeMode="cover"
+                          />
+                        </View>
+                        <View style={styles.coverRightColumn}>
+                          <View style={styles.coverHalfHorizontal}>
+                            <Image
+                              source={{ uri: playlist.cover_images[1] }}
+                              style={styles.coverGridImage}
+                              resizeMode="cover"
+                            />
+                          </View>
+                          <View style={styles.coverHalfHorizontal}>
+                            <Image
+                              source={{ uri: playlist.cover_images[2] }}
+                              style={styles.coverGridImage}
+                              resizeMode="cover"
+                            />
+                          </View>
+                        </View>
+                      </View>
+                    ) : (
+                      /* 4+ songs - 2x2 grid */
+                      <View style={styles.coverGrid}>
+                        {[0, 1, 2, 3].map((i) => (
+                          <View key={i} style={styles.coverGridItem}>
+                            {playlist.cover_images[i] ? (
+                              <Image
+                                source={{ uri: playlist.cover_images[i] }}
+                                style={styles.coverGridImage}
+                                resizeMode="cover"
+                              />
+                            ) : (
+                              <View style={styles.coverGridPlaceholder}>
+                                <Ionicons name="musical-notes" size={20} color="rgba(0,0,0,0.3)" />
+                              </View>
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Playlist Info */}
+                  <View style={styles.playlistInfo}>
+                    <Text style={styles.playlistName} numberOfLines={1}>
+                      {playlist.name}
                     </Text>
-                  </LinearGradient>
+                    <Text style={styles.playlistSongCount}>
+                      {playlist.song_count} {playlist.song_count === 1 ? 'song' : 'songs'}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -237,6 +446,39 @@ const HistoryScreen = () => {
                 <Text style={styles.deleteAllText}>Clear All</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Circular Artists - Tepat di bawah "Your History" title */}
+            {artists.length > 0 && (
+              <View style={styles.artistsInlineSection}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.artistsInlineScrollContent}
+                >
+                  {artists.map((artist, index) => (
+                    <TouchableOpacity
+                      key={artist._id}
+                      style={[
+                        styles.artistCircleContainer,
+                        index === 0 && styles.artistCircleFirst,
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.artistCircle}>
+                        <Image
+                          source={{ uri: artist.image_url || 'https://via.placeholder.com/80' }}
+                          style={styles.artistCircleImage}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <Text style={styles.artistCircleName} numberOfLines={1}>
+                        {artist.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
             {history.map((item) => {
               const renderRightActions = (
@@ -280,7 +522,7 @@ const HistoryScreen = () => {
                 >
                   <TouchableOpacity
                     activeOpacity={0.7}
-                    onPress={() => navigation.navigate('ResultDetailScreen')}
+                    onPress={() => navigation.navigate('ResultDetailScreen', { songId: item._id })}
                     style={styles.rowFront}
                   >
                     <View style={styles.historyItem}>
@@ -313,6 +555,98 @@ const HistoryScreen = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Create Playlist Modal */}
+      <Modal visible={showCreateModal} transparent animationType="none" onRequestClose={closeCreateModal}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={closeCreateModal}
+        >
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <Animated.View
+              style={[
+                styles.createModalContainer,
+                {
+                  opacity: modalOpacity,
+                  transform: [{ scale: modalScale }],
+                },
+              ]}
+            >
+              <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+                <BlurView intensity={95} tint="dark" style={styles.createModalBlur}>
+                  {/* Modal Header */}
+                  <View style={styles.createModalHeader}>
+                    <View style={styles.modalIconContainer}>
+                      <LinearGradient
+                        colors={['#FF9F4D', '#FF8C3A']}
+                        style={styles.modalIconGradient}
+                      >
+                        <Ionicons name="musical-notes" size={32} color="#FFFFFF" />
+                      </LinearGradient>
+                    </View>
+                    <Text style={styles.createModalTitle}>Create Playlist</Text>
+                    <Text style={styles.createModalSubtitle}>
+                      Give your playlist a name and start adding songs
+                    </Text>
+                  </View>
+
+                  {/* Input Fields */}
+                  <View style={styles.inputContainer}>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="disc" size={20} color="#FF9F4D" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Playlist Name"
+                        placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                        value={playlistName}
+                        onChangeText={setPlaylistName}
+                        autoFocus
+                        maxLength={50}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={closeCreateModal}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.createButton,
+                        playlistName.trim().length === 0 && styles.createButtonDisabled,
+                      ]}
+                      onPress={handleCreatePlaylist}
+                      activeOpacity={0.8}
+                      disabled={playlistName.trim().length === 0}
+                    >
+                      <LinearGradient
+                        colors={
+                          playlistName.trim().length === 0
+                            ? ['#999', '#777']
+                            : ['#FF9F4D', '#FF8C3A']
+                        }
+                        style={styles.createButtonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                        <Text style={styles.createButtonText}>Create</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                </BlurView>
+              </TouchableOpacity>
+            </Animated.View>
+          </KeyboardAvoidingView>
+        </TouchableOpacity>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -325,60 +659,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  // Featured Section (Horizontal Slider)
-  featuredSection: {
-    paddingTop: 60,
-    paddingBottom: 32,
-  },
-  featuredScrollContent: {
-    paddingRight: 20,
-  },
-  featuredItem: {
-    width: width * 0.5,
-    height: width * 0.5,
-    marginLeft: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-  },
-  featuredItemFirst: {
-    marginLeft: 20,
-  },
-  featuredImage: {
-    width: '100%',
-    height: '100%',
-  },
-  featuredOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-  },
-  featuredGradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 14,
-    justifyContent: 'flex-end',
-    height: '50%',
-  },
-  featuredArtist: {
-    fontFamily: 'BebasNeue_400Regular',
-    fontSize: 24,
-    color: '#FFFFFF',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    textShadowColor: 'rgba(0, 0, 0, 0.9)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
   },
   // History Section
   historySection: {
@@ -523,5 +803,309 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     letterSpacing: 0.3,
+  },
+  // Playlists Section
+  playlistsSection: {
+    paddingTop: 60,
+    paddingBottom: 28,
+  },
+  playlistsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 18,
+  },
+  playlistsSectionTitle: {
+    fontFamily: 'BebasNeue_400Regular',
+    fontSize: 38,
+    color: '#000000ff',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 8,
+  },
+  createPlaylistButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+    // borderWidth: 2,
+    // borderColor: '#FF9F4D',
+  },
+  createPlaylistText: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 13,
+    color: '#FF9F4D',
+    letterSpacing: 0.3,
+  },
+  playlistScrollContent: {
+    paddingRight: 20,
+  },
+  playlistCard: {
+    width: width * 0.42,
+    marginLeft: 16,
+    borderRadius: 14,
+    overflow: 'visible',
+  },
+  playlistCardFirst: {
+    marginLeft: 20,
+  },
+  playlistCoverContainer: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 12,
+    position: 'relative',
+  },
+  // Single cover (0 or 1 song)
+  coverSingle: {
+    width: '100%',
+    height: '100%',
+  },
+  // Cover grid container
+  coverGrid: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  // 2 songs - Half vertical split
+  coverHalfVertical: {
+    width: '50%',
+    height: '100%',
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  // 3 songs - Full left (1 song)
+  coverFullLeft: {
+    width: '50%',
+    height: '100%',
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  // 3 songs - Right column (2 songs stacked)
+  coverRightColumn: {
+    width: '50%',
+    height: '100%',
+    flexDirection: 'column',
+  },
+  // 3 songs - Half horizontal (for right column)
+  coverHalfHorizontal: {
+    width: '100%',
+    height: '50%',
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  // 4+ songs - Grid item
+  coverGridItem: {
+    width: '50%',
+    height: '50%',
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  coverGridImage: {
+    width: '100%',
+    height: '100%',
+  },
+  coverGridPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playlistInfo: {
+    paddingHorizontal: 4,
+  },
+  playlistName: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 16,
+    color: '#000000ff',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  playlistSongCount: {
+    fontFamily: 'Rajdhani_600SemiBold',
+    fontSize: 13,
+    color: 'rgba(0, 0, 0, 0.7)',
+    letterSpacing: 0.3,
+  },
+  // Circular Artists Section (Inline di bawah "Your History")
+  artistsInlineSection: {
+    marginBottom: 20,
+    marginTop: 8,
+  },
+  artistsInlineScrollContent: {
+    paddingHorizontal: 0,
+  },
+  artistCircleContainer: {
+    alignItems: 'center',
+    marginHorizontal: 8,
+    width: 80,
+  },
+  artistCircleFirst: {
+    marginLeft: 0,
+  },
+  artistCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderWidth: 3,
+    borderColor: '#000000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  artistCircleImage: {
+    width: '100%',
+    height: '100%',
+  },
+  artistCircleName: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 12,
+    color: '#000000ff',
+    marginTop: 8,
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+  // Create Playlist Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  createModalContainer: {
+    width: width * 0.9,
+    maxWidth: 400,
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.8,
+    shadowRadius: 30,
+    elevation: 25,
+  },
+  createModalBlur: {
+    padding: 24,
+  },
+  createModalHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalIconContainer: {
+    marginBottom: 16,
+  },
+  modalIconGradient: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FF9F4D',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  createModalTitle: {
+    fontFamily: 'BebasNeue_400Regular',
+    fontSize: 32,
+    color: '#FFFFFF',
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  createModalSubtitle: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 20,
+  },
+  inputContainer: {
+    marginBottom: 24,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 159, 77, 0.3)',
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 15,
+    color: '#FFFFFF',
+    paddingVertical: 0,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  cancelButtonText: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 15,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  createButton: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#FF9F4D',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  createButtonDisabled: {
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  createButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  createButtonText: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 15,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
 });
