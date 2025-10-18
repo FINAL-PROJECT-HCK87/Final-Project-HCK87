@@ -400,6 +400,82 @@ class PlaylistController {
       next(error);
     }
   }
+
+  //!CRUD Playlist
+  static async createUserPlaylist(req, res, next) {
+    try {
+      const collection = PlaylistController.getCollection();
+      const deviceId = req.headers['x-device-id']
+      console.log(req.body)
+      const {playlistName} = req.body; //playlist data should be userId, song_name and userName
+      const payload = {playlist_name: playlistName, createdAt: new Date(), tracks: [], deviceId};
+      const result = await collection.insertOne(payload);
+      res.status(201).json({ message: "Playlist created", data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getAllUserPlaylists(req, res, next) {
+    try {
+      const collection = PlaylistController.getCollection();
+      const deviceId = req.headers['x-device-id'];
+      const playlists = await collection.find({ deviceId }).toArray();
+      res.status(200).json({ data: playlists });
+    } catch (error) {
+      next(error);
+    }
+  }
+  static async getUserPlaylistById(req, res, next) {
+    try {
+      const collection = PlaylistController.getCollection();
+      const playlistId = req.params.playlistId;
+      const playlist = await collection.findOne({ _id: new ObjectId(playlistId) });
+      if (!playlist) {
+        return res.status(404).json({ message: "Playlist not found" });
+      }
+      res.status(200).json({ data: playlist });
+    } catch (error) {
+      next(error);
+    } 
+  }
+
+  static async updateUserPlaylist(req, res, next) {
+    try {
+      const collection = PlaylistController.getCollection();
+      const playlistId = req.params.playlistId;
+      const updateData = req.body;
+      //* Push songs to existing playlist
+      const result = await collection.updateOne(
+        { _id: new ObjectId(playlistId) },
+        { $push: { tracks: { $each: updateData.tracks } } }
+      );
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ message: "Playlist not found" });
+      }
+      res.status(200).json({ message: "Playlist updated", data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteUserPlaylist(req, res, next) {
+    try {
+      const collection = PlaylistController.getCollection();
+      const playlistId = req.params.playlistId;
+      const result = await collection.deleteOne({ _id: new ObjectId(playlistId) });
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ message: "Playlist not found" });
+      }
+      res.status(200).json({ message: "Playlist deleted" });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
+
+
 }
 
 module.exports = PlaylistController;
