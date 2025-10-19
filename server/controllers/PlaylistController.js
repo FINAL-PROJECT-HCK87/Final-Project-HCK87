@@ -475,64 +475,66 @@ class PlaylistController {
             const firstTrack = playlist.tracks[0];
             const isOldFormat = typeof firstTrack === 'object' && firstTrack.isrc;
 
-          let populatedTracks = [];
+            let populatedTracks = [];
 
-          if (isOldFormat) {
-            // Old format: { isrc, song_name }
-            const isrcs = playlist.tracks.map((track) => track.isrc).filter((isrc) => isrc);
-            const fullSongs = await songCollection.find({ isrc: { $in: isrcs } }).toArray();
+            if (isOldFormat) {
+              // Old format: { isrc, song_name }
+              const isrcs = playlist.tracks.map((track) => track.isrc).filter((isrc) => isrc);
+              const fullSongs = await songCollection.find({ isrc: { $in: isrcs } }).toArray();
 
-            populatedTracks = playlist.tracks
-              .map((track) => {
-                const fullSong = fullSongs.find((song) => song.isrc === track.isrc);
+              populatedTracks = playlist.tracks
+                .map((track) => {
+                  const fullSong = fullSongs.find((song) => song.isrc === track.isrc);
 
-                if (fullSong) {
+                  if (fullSong) {
+                    return {
+                      _id: fullSong._id,
+                      isrc: fullSong.isrc,
+                      song_name: fullSong.title,
+                      artist: fullSong.artist_subtitle,
+                      cover_art_url: fullSong.cover_art_url,
+                      duration_ms: fullSong.duration_ms,
+                      spotify_url: fullSong.spotify_url,
+                    };
+                  }
+
+                  // Fallback to minimal data
                   return {
-                    _id: fullSong._id,
-                    isrc: fullSong.isrc,
-                    song_name: fullSong.title,
-                    artist: fullSong.artist_subtitle,
-                    cover_art_url: fullSong.cover_art_url,
-                    duration_ms: fullSong.duration_ms,
-                    spotify_url: fullSong.spotify_url,
+                    isrc: track.isrc,
+                    song_name: track.song_name,
+                    artist: 'Unknown Artist',
+                    cover_art_url: null,
+                    duration_ms: 0,
                   };
-                }
+                })
+                .filter((track) => track !== null);
+            } else {
+              // New format: ObjectId
+              const songIds = playlist.tracks.map((trackId) => new ObjectId(trackId));
+              const fullSongs = await songCollection.find({ _id: { $in: songIds } }).toArray();
 
-                // Fallback to minimal data
-                return {
-                  isrc: track.isrc,
-                  song_name: track.song_name,
-                  artist: 'Unknown Artist',
-                  cover_art_url: null,
-                  duration_ms: 0,
-                };
-              })
-              .filter((track) => track !== null);
-          } else {
-            // New format: ObjectId
-            const songIds = playlist.tracks.map((trackId) => new ObjectId(trackId));
-            const fullSongs = await songCollection.find({ _id: { $in: songIds } }).toArray();
+              populatedTracks = playlist.tracks
+                .map((trackId) => {
+                  const fullSong = fullSongs.find(
+                    (song) => song._id.toString() === trackId.toString()
+                  );
 
-            populatedTracks = playlist.tracks
-              .map((trackId) => {
-                const fullSong = fullSongs.find((song) => song._id.toString() === trackId.toString());
+                  if (fullSong) {
+                    return {
+                      _id: fullSong._id,
+                      isrc: fullSong.isrc,
+                      song_name: fullSong.title,
+                      artist: fullSong.artist_subtitle,
+                      cover_art_url: fullSong.cover_art_url,
+                      duration_ms: fullSong.duration_ms,
+                      spotify_url: fullSong.spotify_url,
+                    };
+                  }
 
-                if (fullSong) {
-                  return {
-                    _id: fullSong._id,
-                    isrc: fullSong.isrc,
-                    song_name: fullSong.title,
-                    artist: fullSong.artist_subtitle,
-                    cover_art_url: fullSong.cover_art_url,
-                    duration_ms: fullSong.duration_ms,
-                    spotify_url: fullSong.spotify_url,
-                  };
-                }
-
-                return null; // Song not found
-              })
-              .filter((track) => track !== null);
-          }
+                  return null; // Song not found
+                })
+                .filter((track) => track !== null);
+            }
 
             return { ...playlist, tracks: populatedTracks };
           } catch (error) {
@@ -569,62 +571,64 @@ class PlaylistController {
           const firstTrack = playlist.tracks[0];
           const isOldFormat = typeof firstTrack === 'object' && firstTrack.isrc;
 
-        if (isOldFormat) {
-          // Old format: { isrc, song_name }
-          const isrcs = playlist.tracks.map((track) => track.isrc).filter((isrc) => isrc);
-          const fullSongs = await songCollection.find({ isrc: { $in: isrcs } }).toArray();
+          if (isOldFormat) {
+            // Old format: { isrc, song_name }
+            const isrcs = playlist.tracks.map((track) => track.isrc).filter((isrc) => isrc);
+            const fullSongs = await songCollection.find({ isrc: { $in: isrcs } }).toArray();
 
-          playlist.tracks = playlist.tracks
-            .map((track) => {
-              const fullSong = fullSongs.find((song) => song.isrc === track.isrc);
+            playlist.tracks = playlist.tracks
+              .map((track) => {
+                const fullSong = fullSongs.find((song) => song.isrc === track.isrc);
 
-              if (fullSong) {
+                if (fullSong) {
+                  return {
+                    _id: fullSong._id,
+                    isrc: fullSong.isrc,
+                    song_name: fullSong.title,
+                    artist: fullSong.artist_subtitle,
+                    cover_art_url: fullSong.cover_art_url,
+                    duration_ms: fullSong.duration_ms,
+                    spotify_url: fullSong.spotify_url,
+                  };
+                }
+
+                // Fallback to minimal data
                 return {
-                  _id: fullSong._id,
-                  isrc: fullSong.isrc,
-                  song_name: fullSong.title,
-                  artist: fullSong.artist_subtitle,
-                  cover_art_url: fullSong.cover_art_url,
-                  duration_ms: fullSong.duration_ms,
-                  spotify_url: fullSong.spotify_url,
+                  isrc: track.isrc,
+                  song_name: track.song_name,
+                  artist: 'Unknown Artist',
+                  cover_art_url: null,
+                  duration_ms: 0,
                 };
-              }
+              })
+              .filter((track) => track !== null);
+          } else {
+            // New format: ObjectId
+            const songIds = playlist.tracks.map((trackId) => new ObjectId(trackId));
+            const fullSongs = await songCollection.find({ _id: { $in: songIds } }).toArray();
 
-              // Fallback to minimal data
-              return {
-                isrc: track.isrc,
-                song_name: track.song_name,
-                artist: 'Unknown Artist',
-                cover_art_url: null,
-                duration_ms: 0,
-              };
-            })
-            .filter((track) => track !== null);
-        } else {
-          // New format: ObjectId
-          const songIds = playlist.tracks.map((trackId) => new ObjectId(trackId));
-          const fullSongs = await songCollection.find({ _id: { $in: songIds } }).toArray();
+            playlist.tracks = playlist.tracks
+              .map((trackId) => {
+                const fullSong = fullSongs.find(
+                  (song) => song._id.toString() === trackId.toString()
+                );
 
-          playlist.tracks = playlist.tracks
-            .map((trackId) => {
-              const fullSong = fullSongs.find((song) => song._id.toString() === trackId.toString());
+                if (fullSong) {
+                  return {
+                    _id: fullSong._id,
+                    isrc: fullSong.isrc,
+                    song_name: fullSong.title,
+                    artist: fullSong.artist_subtitle,
+                    cover_art_url: fullSong.cover_art_url,
+                    duration_ms: fullSong.duration_ms,
+                    spotify_url: fullSong.spotify_url,
+                  };
+                }
 
-              if (fullSong) {
-                return {
-                  _id: fullSong._id,
-                  isrc: fullSong.isrc,
-                  song_name: fullSong.title,
-                  artist: fullSong.artist_subtitle,
-                  cover_art_url: fullSong.cover_art_url,
-                  duration_ms: fullSong.duration_ms,
-                  spotify_url: fullSong.spotify_url,
-                };
-              }
-
-              return null; // Song not found
-            })
-            .filter((track) => track !== null);
-        }
+                return null; // Song not found
+              })
+              .filter((track) => track !== null);
+          }
         } catch (error) {
           console.error('Error populating tracks for playlist:', playlist._id, error);
           // Set tracks to empty array if error
@@ -832,7 +836,9 @@ class PlaylistController {
 
       // Check if user is the owner
       if (existingPlaylist.ownerId !== deviceId) {
-        return res.status(403).json({ message: 'Only the owner can delete songs from the playlist' });
+        return res
+          .status(403)
+          .json({ message: 'Only the owner can delete songs from the playlist' });
       }
 
       // Remove song from tracks array
@@ -858,9 +864,9 @@ class PlaylistController {
 
       // Featured playlist IDs that always show
       const featuredPlaylistIds = [
-        new ObjectId('68f4abd4f559e486e50e287a'),
-        new ObjectId('68f4abd4f559e486e50e2879'),
-        new ObjectId('68f4abd4f559e486e50e287c'),
+        'BEST HITS 2025',
+        'Lagu Pop Indonesia Hits 2025',
+        'Top New Songs October 2025',
       ];
 
       let matchedPlaylists = [];
@@ -881,7 +887,7 @@ class PlaylistController {
         matchedPlaylists = await collection
           .find({
             tracks: { $in: searchedSongIds },
-            _id: { $nin: featuredPlaylistIds }, // Exclude featured to avoid duplicates
+            playlist_name: { $nin: featuredPlaylistIds }, // Exclude featured to avoid duplicates
             ownerId: { $ne: deviceId }, // Don't show playlists owned by current user
           })
           .limit(20)
@@ -891,7 +897,7 @@ class PlaylistController {
       // Always fetch featured playlists
       const featuredPlaylists = await collection
         .find({
-          _id: { $in: featuredPlaylistIds },
+          playlist_name: { $in: featuredPlaylistIds },
         })
         .toArray();
 
