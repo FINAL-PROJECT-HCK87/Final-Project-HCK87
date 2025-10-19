@@ -16,6 +16,198 @@ class Controller {
     return collection;
   }
 
+  static async getArtistConcerts(req, res, next) {
+    try {
+      const artistId = req.params.id;
+
+      console.log(`🎤 Fetching concerts for artist ID: ${artistId}`);
+
+      // Validate ObjectId format
+      if (!ObjectId.isValid(artistId)) {
+        console.log(`❌ Invalid ObjectId format: ${artistId}`);
+        return res.status(400).json({ message: 'Invalid artist ID format' });
+      }
+
+      const artistsCollection = Controller.getArtistsCollection();
+      const artist = await artistsCollection.findOne({ _id: new ObjectId(artistId) });
+
+      if (!artist) {
+        console.log(`❌ Artist not found with ID: ${artistId}`);
+        return res.status(404).json({ message: 'Artist not found' });
+      }
+
+      console.log(`🎵 Artist found: "${artist.name}"`);
+
+      // Get query parameters
+      const date = req.query.date || 'upcoming'; // Default: upcoming events
+      const country = req.query.country || null; // Optional country filter
+      const limit = parseInt(req.query.limit) || 50; // Default: 50 events
+
+      // Fetch concerts from Ticketmaster Discovery API (more reliable than Bandsintown)
+      try {
+        const ticketmaster_url = `https://app.ticketmaster.com/discovery/v2/events.json`;
+
+        console.log(`🔍 Fetching from Ticketmaster API for artist: "${artist.name}"`);
+        console.log(`📅 Date filter: ${date}, Country filter: ${country || 'none'}`);
+
+        // Build query params
+        const params = {
+          apikey: process.env.TICKETMASTER_API_KEY || 'YOUR_API_KEY_HERE', // Get from env
+          keyword: artist.name, // Search by artist name
+          classificationName: 'music', // Only music events
+          size: limit || 50, // Number of results
+          sort: 'date,asc', // Sort by date ascending
+        };
+
+        // Add country filter if specified
+        if (country) {
+          // Ticketmaster uses country codes (US, GB, CA, etc.)
+          const countryCodes = {
+            'United States': 'US',
+            'United Kingdom': 'GB',
+            Indonesia: 'ID',
+            Japan: 'JP',
+            Singapore: 'SG',
+            Canada: 'CA',
+            Australia: 'AU',
+          };
+          params.countryCode = countryCodes[country] || country;
+        }
+
+        const response = await axios.get(ticketmaster_url, {
+          params: params,
+          timeout: 10000, // 10 second timeout
+        });
+
+        // Parse Ticketmaster response
+        const events = response.data._embedded?.events || [];
+
+        console.log(`✅ Ticketmaster returned ${events.length} events`);
+
+        // Format response to match our schema
+        const formattedConcerts = events.map((event) => {
+          const venue = event._embedded?.venues?.[0] || {};
+          const attraction = event._embedded?.attractions?.[0] || {};
+
+          return {
+            id: event.id,
+            title: event.name || `${artist.name} Live`,
+            datetime: event.dates?.start?.dateTime || event.dates?.start?.localDate || '',
+            venue: {
+              name: venue.name || 'Venue TBA',
+              city: venue.city?.name || '',
+              region: venue.state?.stateCode || venue.state?.name || '',
+              country: venue.country?.name || venue.country?.countryCode || '',
+              latitude: venue.location?.latitude || '',
+              longitude: venue.location?.longitude || '',
+            },
+            lineup: event._embedded?.attractions?.map((a) => a.name) || [artist.name],
+            description: event.info || event.pleaseNote || '',
+            url: event.url || '', // Ticketmaster event page URL
+            offers:
+              event.priceRanges?.map((price) => ({
+                type: price.type,
+                currency: price.currency,
+                min: price.min,
+                max: price.max,
+              })) || [],
+          };
+        });
+
+        console.log(`✅ Formatted ${formattedConcerts.length} concerts`);
+
+        return res.status(200).json({
+          artist: {
+            _id: artist._id,
+            name: artist.name,
+            image_url: artist.image_url || '',
+          },
+          concerts: formattedConcerts,
+          total: formattedConcerts.length,
+        });
+      } catch (ticketmasterError) {
+        // Handle Ticketmaster API errors
+        if (ticketmasterError.response?.status === 404) {
+          console.log(`⚠️  No events found for "${artist.name}"`);
+          return res.status(200).json({
+            artist: {
+              _id: artist._id,
+              name: artist.name,
+              image_url: artist.image_url || '',
+            },
+            concerts: [],
+            total: 0,
+            message: 'No upcoming concerts found for this artist',
+          });
+        }
+
+        if (ticketmasterError.response?.status === 401) {
+          console.error('❌ Ticketmaster API 401 Unauthorized - invalid API key');
+          return res.status(200).json({
+            artist: {
+              _id: artist._id,
+              name: artist.name,
+              image_url: artist.image_url || '',
+            },
+            concerts: [],
+            total: 0,
+            message: 'Concert service temporarily unavailable. Please check API configuration.',
+          });
+        }
+
+        if (ticketmasterError.response?.status === 429) {
+          console.error('❌ Ticketmaster API 429 Rate Limit - too many requests');
+          return res.status(200).json({
+            artist: {
+              _id: artist._id,
+              name: artist.name,
+              image_url: artist.image_url || '',
+            },
+            concerts: [],
+            total: 0,
+            message: 'Too many requests. Please try again in a few minutes.',
+          });
+        }
+
+        if (ticketmasterError.code === 'ECONNABORTED') {
+          console.error('❌ Ticketmaster API timeout');
+          return res.status(200).json({
+            artist: {
+              _id: artist._id,
+              name: artist.name,
+              image_url: artist.image_url || '',
+            },
+            concerts: [],
+            total: 0,
+            message: 'Request timeout. Please try again.',
+          });
+        }
+
+        console.error('❌ Ticketmaster API error:', ticketmasterError.message);
+        console.error('Response status:', ticketmasterError.response?.status);
+        console.error('Response data:', ticketmasterError.response?.data);
+
+        return res.status(200).json({
+          artist: {
+            _id: artist._id,
+            name: artist.name,
+            image_url: artist.image_url || '',
+          },
+          concerts: [],
+          total: 0,
+          message: 'Unable to fetch concerts. Please try again later.',
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error in getArtistConcerts:', error.message);
+      console.error('Stack trace:', error.stack);
+
+      return res.status(500).json({
+        message: 'Internal server error',
+        error: error.message,
+      });
+    }
+  }
   // Spotify API Integration
   static async getSpotifyToken() {
     try {
@@ -194,6 +386,7 @@ class Controller {
           ...formData.getHeaders(),
         },
         data: formData,
+        timeout: 60000, // 60 seconds timeout for Shazam API
       });
 
       if (!shazamResponse.data || !shazamResponse.data.track) {

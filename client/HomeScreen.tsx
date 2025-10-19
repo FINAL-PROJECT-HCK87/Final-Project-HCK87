@@ -17,7 +17,7 @@ import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { useListening } from './contexts/ListeningContext';
-import { instance } from './utils/axios';
+import { instance, heavyInstance } from './utils/axios';
 import { useAuth } from './contexts/AuthContext';
 
 const HomeScreen = () => {
@@ -431,7 +431,7 @@ const HomeScreen = () => {
         name: 'recording.m4a',
       } as any);
 
-      const response = await instance({
+      const response = await heavyInstance({
         url: '/songs/recognize',
         method: 'POST',
         data: formData,
@@ -439,7 +439,6 @@ const HomeScreen = () => {
           'Content-Type': 'multipart/form-data',
           'x-device-id': deviceId,
         },
-        timeout: 35000, // 35 second timeout
       });
 
       console.log('✅ Recognition successful:', response.data);

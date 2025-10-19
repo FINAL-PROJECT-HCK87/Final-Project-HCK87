@@ -1,12 +1,14 @@
 import { StyleSheet, View, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts, BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
 import { Poppins_700Bold, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
 import { Rajdhani_600SemiBold } from '@expo-google-fonts/rajdhani';
+import { useFocusEffect } from '@react-navigation/native';
 import { instance } from './utils/axios';
+import { useAuth } from './contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -67,7 +69,9 @@ const playlists = [
 ];
 
 const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
+  const { deviceId } = useAuth();
   const [topSongs, setTopSongs] = useState<any[]>([]);
+  const [playlists, setPlaylists] = useState<any[]>([]);
 
   let [fontsLoaded] = useFonts({
     BebasNeue_400Regular,
@@ -76,9 +80,13 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
     Rajdhani_600SemiBold,
   });
 
-  useEffect(() => {
-    fetchTopSongs();
-  }, []);
+  // Auto-reload data when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchTopSongs();
+      fetchPlaylists();
+    }, [])
+  );
 
   const fetchTopSongs = async () => {
     try {
@@ -95,6 +103,31 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
     }
   };
 
+  const fetchPlaylists = async () => {
+    try {
+      const response = await instance({
+        method: 'GET',
+        url: '/playlists/for-you',
+        headers: {
+          'x-device-id': deviceId,
+        },
+      });
+
+      if (response.data && response.data.data) {
+        const transformedPlaylists = response.data.data.map((playlist: any) => ({
+          _id: playlist._id,
+          name: playlist.playlist_name || 'Untitled Playlist',
+          description: `${playlist.song_count || 0} songs`,
+          song_count: playlist.song_count || 0,
+          cover_images: playlist.cover_images || [],
+        }));
+        setPlaylists(transformedPlaylists);
+      }
+    } catch (err: any) {
+      console.error('Error fetching playlists:', err);
+    }
+  };
+
   if (!fontsLoaded) {
     return null;
   }
@@ -104,7 +137,14 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   };
 
   const handleTopSongPress = (songId: string) => {
-    navigation?.navigate('ResultDetailScreen', { songId });
+    // Extract all song IDs from top songs for next/prev navigation
+    const songIds = topSongs.map((song) => String(song._id)).filter((id) => id);
+
+    navigation?.navigate('ResultDetailScreen', {
+      songId,
+      source: 'search',
+      songIds: songIds,
+    });
   };
 
   return (
@@ -159,32 +199,108 @@ const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
           <Text style={styles.playlistSectionTitle}>Playlists for you</Text>
         </View>
 
-        {/* Playlist List - Modern 1 Column Design */}
+        {/* Playlist List - Vertical List dengan Dynamic Cover */}
         <View style={styles.playlistList}>
           {playlists.map((playlist) => (
-            <View key={playlist.id} style={styles.playlistItem}>
+            <View key={playlist._id} style={styles.playlistItem}>
               <TouchableOpacity
                 style={styles.playlistItemContent}
                 activeOpacity={0.7}
-                onPress={() => handlePlaylistPress(playlist)}
+                onPress={() => {
+                  // Ensure playlistId is a string
+                  const playlistId = typeof playlist._id === 'object' ? String(playlist._id) : playlist._id;
+                  navigation?.navigate('PlaylistDetail', {
+                    playlistId: playlistId,
+                    playlist: playlist,
+                  });
+                }}
               >
-                {/* Squircle Thumbnail with Gradient Overlay */}
+                {/* Dynamic Thumbnail - Based on song count */}
                 <View style={styles.thumbnailContainer}>
-                  <Image
-                    source={{ uri: playlist.cover }}
-                    style={styles.thumbnail}
-                    resizeMode="cover"
-                  />
+                  {playlist.song_count === 0 ? (
+                    <Image
+                      source={require('./assets/melodix.png')}
+                      style={styles.thumbnail}
+                      resizeMode="cover"
+                    />
+                  ) : playlist.song_count === 1 ? (
+                    <Image
+                      source={{ uri: playlist.cover_images[0] }}
+                      style={styles.thumbnail}
+                      resizeMode="cover"
+                    />
+                  ) : playlist.song_count === 2 ? (
+                    <View style={styles.thumbnailGrid}>
+                      <View style={styles.thumbnailHalf}>
+                        <Image
+                          source={{ uri: playlist.cover_images[0] }}
+                          style={styles.thumbnailGridImage}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View style={styles.thumbnailHalf}>
+                        <Image
+                          source={{ uri: playlist.cover_images[1] }}
+                          style={styles.thumbnailGridImage}
+                          resizeMode="cover"
+                        />
+                      </View>
+                    </View>
+                  ) : playlist.song_count === 3 ? (
+                    <View style={styles.thumbnailGrid}>
+                      <View style={styles.thumbnailHalf}>
+                        <Image
+                          source={{ uri: playlist.cover_images[0] }}
+                          style={styles.thumbnailGridImage}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View style={styles.thumbnailHalf}>
+                        <View style={styles.thumbnailQuarter}>
+                          <Image
+                            source={{ uri: playlist.cover_images[1] }}
+                            style={styles.thumbnailGridImage}
+                            resizeMode="cover"
+                          />
+                        </View>
+                        <View style={styles.thumbnailQuarter}>
+                          <Image
+                            source={{ uri: playlist.cover_images[2] }}
+                            style={styles.thumbnailGridImage}
+                            resizeMode="cover"
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.thumbnailGrid}>
+                      {[0, 1, 2, 3].map((i) => (
+                        <View key={i} style={styles.thumbnailGridQuarter}>
+                          {playlist.cover_images[i] ? (
+                            <Image
+                              source={{ uri: playlist.cover_images[i] }}
+                              style={styles.thumbnailGridImage}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View style={styles.thumbnailPlaceholder}>
+                              <Ionicons name="musical-notes" size={16} color="rgba(0,0,0,0.3)" />
+                            </View>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
 
                 {/* Text Content + Icon Container */}
                 <View style={styles.contentRight}>
                   <View style={styles.textContainer}>
                     <Text style={styles.playlistTitle} numberOfLines={1}>
-                      {playlist.title}
+                      {playlist.name}
                     </Text>
                     <Text style={styles.playlistDescription} numberOfLines={1}>
-                      {playlist.description}
+                      {playlist.song_count} {playlist.song_count === 1 ? 'song' : 'songs'}
                     </Text>
                   </View>
 
@@ -331,7 +447,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
   },
-  // Squircle Thumbnail
+  // Dynamic Thumbnail Container (80x80 dengan grid dinamis)
   thumbnailContainer: {
     position: 'relative',
     width: 80,
@@ -344,6 +460,34 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: '100%',
     height: '100%',
+  },
+  thumbnailGrid: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  thumbnailHalf: {
+    width: '50%',
+    height: '100%',
+  },
+  thumbnailQuarter: {
+    width: '100%',
+    height: '50%',
+  },
+  thumbnailGridQuarter: {
+    width: '50%',
+    height: '50%',
+  },
+  thumbnailGridImage: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   thumbnailOverlay: {
     position: 'absolute',

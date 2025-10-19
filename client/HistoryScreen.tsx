@@ -153,6 +153,44 @@ const HistoryScreen = () => {
     }
   };
 
+  const fetchPlaylists = async () => {
+    try {
+      const response = await instance({
+        method: 'GET',
+        url: '/playlists/all',
+        headers: {
+          'x-device-id': deviceId,
+        },
+      });
+
+      console.log('Fetched playlists:', response.data.data);
+
+      // Transform API data to match PlaylistItem interface
+      const transformedPlaylists = response.data.data.map((playlist: any) => {
+        // Extract unique cover images from tracks (max 4 for grid display)
+        // Server now returns full track data with cover_art_url
+        const coverImages = playlist.tracks
+          ?.slice(0, 4)
+          .map((track: any) => track.cover_art_url)
+          .filter((url: string) => url) || [];
+
+        return {
+          _id: playlist._id,
+          name: playlist.playlist_name || 'Untitled Playlist',
+          description: `${playlist.tracks?.length || 0} songs`,
+          song_count: playlist.tracks?.length || 0,
+          cover_images: coverImages,
+        };
+      });
+
+      setPlaylists(transformedPlaylists);
+    } catch (error) {
+      console.error('Error fetching playlists:', error);
+      // Fallback to empty array if error
+      setPlaylists([]);
+    }
+  };
+
   const formatDuration = (durationMs: number) => {
     const minutes = Math.floor(durationMs / 60000);
     const seconds = Math.floor((durationMs % 60000) / 1000);
@@ -257,38 +295,32 @@ const HistoryScreen = () => {
       return;
     }
 
-    // TODO: API call to create playlist
     try {
-      console.log(playlistName)
+      console.log(playlistName);
       const response = await instance({
         method: 'POST',
         url: '/playlists/create',
         headers: {
-          'x-device-id': deviceId
+          'x-device-id': deviceId,
         },
-        data: {playlistName}
+        data: { playlistName },
       });
-      
-      // console.log(response)
-      // console.log('Creating playlist:', { name: playlistName });
-    
-    
-      // For now, just close modal
-    closeCreateModal();
-    Alert.alert('Success', `Playlist "${playlistName}" created!`);
-    } catch (error:unknown) {
-      console.log(error as string)
+
+      // Close modal and refresh playlists
+      closeCreateModal();
+      await fetchPlaylists(); // Refresh playlists after creating new one
+      Alert.alert('Success', `Playlist "${playlistName}" created!`);
+    } catch (error: unknown) {
+      console.log(error as string);
+      Alert.alert('Error', 'Failed to create playlist. Please try again.');
     }
-
-
   };
 
   useFocusEffect(
     useCallback(() => {
       fetchHistory();
       fetchArtists();
-      // Set dummy playlists for now
-      setPlaylists(dummyPlaylists);
+      fetchPlaylists(); // Fetch real playlists from API
     }, [])
   );
 
@@ -319,20 +351,26 @@ const HistoryScreen = () => {
         scrollEnabled={scrollEnabled}
       >
         {/* Playlists Section - PALING ATAS */}
-        {playlists.length > 0 && (
-          <View style={styles.playlistsSection}>
-            <View style={styles.playlistsHeader}>
-              <Text style={styles.playlistsSectionTitle}>My Playlists</Text>
-              <TouchableOpacity
-                style={styles.createPlaylistButton}
-                activeOpacity={0.8}
-                onPress={openCreateModal}
-              >
-                <Ionicons name="add-circle" size={24} color="#FF9F4D" />
-                <Text style={styles.createPlaylistText}>Create</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.playlistsSection}>
+          <View style={styles.playlistsHeader}>
+            <Text style={styles.playlistsSectionTitle}>My Playlists</Text>
+            <TouchableOpacity
+              style={styles.createPlaylistButton}
+              activeOpacity={0.8}
+              onPress={openCreateModal}
+            >
+              <Ionicons name="add-circle" size={24} color="#FF9F4D" />
+              <Text style={styles.createPlaylistText}>Create</Text>
+            </TouchableOpacity>
+          </View>
 
+          {playlists.length === 0 ? (
+            <View style={styles.emptyPlaylistContainer}>
+              <Ionicons name="musical-notes-outline" size={48} color="rgba(0,0,0,0.25)" />
+              <Text style={styles.emptyPlaylistText}>No playlists yet</Text>
+              <Text style={styles.emptyPlaylistSubtext}>Tap Create to make your first playlist</Text>
+            </View>
+          ) : (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -343,6 +381,13 @@ const HistoryScreen = () => {
                   key={playlist._id}
                   style={[styles.playlistCard, index === 0 && styles.playlistCardFirst]}
                   activeOpacity={0.85}
+                  onPress={() => {
+                    // Navigate to PlaylistDetail with playlist data
+                    navigation.navigate('PlaylistDetail', {
+                      playlistId: playlist._id,
+                      playlist: playlist
+                    });
+                  }}
                 >
                   {/* Cover Grid - Dynamic based on song count */}
                   <View style={styles.playlistCoverContainer}>
@@ -439,8 +484,8 @@ const HistoryScreen = () => {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
-        )}
+          )}
+        </View>
 
         {/* Your History Section - Only show if there's history */}
         {history.length === 0 ? (
@@ -481,6 +526,12 @@ const HistoryScreen = () => {
                         index === 0 && styles.artistCircleFirst,
                       ]}
                       activeOpacity={0.8}
+                      onPress={() => {
+                        navigation.navigate('Concerts', {
+                          artistId: artist._id,
+                          artistName: artist.name,
+                        });
+                      }}
                     >
                       <View style={styles.artistCircle}>
                         <Image
@@ -575,12 +626,13 @@ const HistoryScreen = () => {
       </ScrollView>
 
       {/* Create Playlist Modal */}
-      <Modal visible={showCreateModal} transparent animationType="none" onRequestClose={closeCreateModal}>
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={closeCreateModal}
-        >
+      <Modal
+        visible={showCreateModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeCreateModal}
+      >
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={closeCreateModal}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <Animated.View
               style={[
@@ -862,6 +914,26 @@ const styles = StyleSheet.create({
   },
   playlistScrollContent: {
     paddingRight: 20,
+  },
+  emptyPlaylistContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyPlaylistText: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 16,
+    color: 'rgba(0, 0, 0, 0.5)',
+    marginTop: 12,
+    letterSpacing: 0.3,
+  },
+  emptyPlaylistSubtext: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+    color: 'rgba(0, 0, 0, 0.35)',
+    marginTop: 6,
+    letterSpacing: 0.3,
   },
   playlistCard: {
     width: width * 0.42,

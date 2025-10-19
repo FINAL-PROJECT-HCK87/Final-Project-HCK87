@@ -13,30 +13,23 @@ import {
   Platform,
   Modal,
   Alert,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
-import {
-  Ionicons,
-  FontAwesome5,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
-import React, { useState, useEffect, useRef } from "react";
-import { instance } from "./utils/axios";
-import { Audio } from "expo-av";
-import { useAuth } from "./contexts/AuthContext";
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { instance } from './utils/axios';
+import { Audio } from 'expo-av';
+import { useAuth } from './contexts/AuthContext';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface SongResultDetailProps {
   navigation?: any;
   route?: any;
 }
 
-const SongResultDetail: React.FC<SongResultDetailProps> = ({
-  navigation,
-  route,
-}) => {
+const SongResultDetail: React.FC<SongResultDetailProps> = ({ navigation, route }) => {
   const { deviceId } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -46,10 +39,14 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
   const [audioLoading, setAudioLoading] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [songList, setSongList] = useState<string[]>([]); // Dynamic list based on source
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [playlists, setPlaylists] = useState<any[]>([]);
+
+  // Get source and songIds from route params
+  const source = route?.params?.source; // 'playlist' | 'history' | 'search'
+  const sourceSongIds = route?.params?.songIds; // Array of song IDs from source
 
   // Modal state
   const modalY = useRef(new Animated.Value(SCREEN_HEIGHT * 0.92)).current;
@@ -134,68 +131,23 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
   }, [isPlaying, audioLoading]);
 
   const fetchPlaylists = async () => {
-    // Dummy playlists data
-    // const dummyPlaylists = [
-    //   {
-    //     _id: "1",
-    //     name: "My Favorites",
-    //     song_count: 12,
-    //     cover_images: [
-    //       "https://i.scdn.co/image/ab67616d0000b273e787cffec20aa2a396a61647",
-    //       "https://i.scdn.co/image/ab67616d0000b2732c4f0a1c7bf8bb5b64b5a5f6",
-    //       "https://i.scdn.co/image/ab67616d0000b273b5aa596b1e4b8e5d3e8dfe3a",
-    //       "https://i.scdn.co/image/ab67616d0000b273f6c0a2d7e0c1f7a8d9b3c4e5",
-    //     ],
-    //   },
-    //   {
-    //     _id: "2",
-    //     name: "Workout Mix",
-    //     song_count: 8,
-    //     cover_images: [
-    //       "https://i.scdn.co/image/ab67616d0000b273a935e4689f15953311772cc4",
-    //       "https://i.scdn.co/image/ab67616d0000b273c6f2f60e9b7e3b5d6a8c9d0e",
-    //       "https://i.scdn.co/image/ab67616d0000b273d7f3f70e0c8e4b6d7a9d0e1f",
-    //     ],
-    //   },
-    //   {
-    //     _id: "3",
-    //     name: "Chill Vibes",
-    //     song_count: 5,
-    //     cover_images: [
-    //       "https://i.scdn.co/image/ab67616d0000b273e8f4f80f1d9f5c7e8b0e2f3a",
-    //       "https://i.scdn.co/image/ab67616d0000b273f9f5f90f2e0f6d8f9c1f3a4b",
-    //     ],
-    //   },
-    //   {
-    //     _id: "4",
-    //     name: "Party Hits",
-    //     song_count: 1,
-    //     cover_images: [
-    //       "https://i.scdn.co/image/ab67616d0000b2730a0a091c2d1f7e9f0d2f4b5c",
-    //     ],
-    //   },
-    //   {
-    //     _id: "5",
-    //     name: "Empty Playlist",
-    //     song_count: 0,
-    //     cover_images: [],
-    //   },
-    // ];
-        try {
-            const response = await instance({
-                    method: 'GET',
-                    url: '/playlists/all',
-                    headers: {
-                      'x-device-id': deviceId
-                    }
-                  });
-            const {data} = response.data
-            // console.log(data, "<<< ini data")
-            setPlaylists(data);
-            // console.log(playlists, "<<<<< INI PLAYLIST")
-        } catch (error:unknown) {
-          console.log(error as string)
-        }
+    try {
+      const response = await instance({
+        method: 'GET',
+        url: '/playlists/all',
+        headers: {
+          'x-device-id': deviceId,
+        },
+      });
+      const { data } = response.data;
+
+      // Filter to show only playlists where user is the owner
+      const ownedPlaylists = data.filter((playlist: any) => playlist.ownerId === deviceId);
+
+      setPlaylists(ownedPlaylists);
+    } catch (error: unknown) {
+      console.log(error as string);
+    }
   };
 
   const openPlaylistModal = () => {
@@ -233,33 +185,43 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
     });
   };
 
-  const handleAddToPlaylist = async (
-    playlistId: string,
-    playlistName: string
-  ) => {
+  const handleAddToPlaylist = async (playlistId: string, playlistName: string) => {
     // Dummy implementation - just show success
 
     try {
       const response = await instance({
-        method: "PUT",
+        method: 'PUT',
         url: `/playlists/${playlistId}`,
         headers: {
-          "x-device-id": deviceId,
+          'x-device-id': deviceId,
         },
         data: { songData },
       });
 
       closePlaylistModal();
-      Alert.alert("Success", `Added to "${playlistName}"!`);
+      Alert.alert('Success', `Added to "${playlistName}"!`);
     } catch (error: any) {
       // console.log(error.response.data.message as string);
-      Alert.alert("Error", `${error.response.data.message}`);
+      Alert.alert('Error', `${error.response.data.message}`);
     }
   };
 
   useEffect(() => {
     fetchSongDetail();
-    fetchSearchHistory();
+
+    // Set song list based on source
+    if (source && sourceSongIds && Array.isArray(sourceSongIds)) {
+      // From playlist or search - use provided songIds
+      setSongList(sourceSongIds);
+      const currentSongId = String(route?.params?.songId);
+      const index = sourceSongIds.indexOf(currentSongId);
+      if (index !== -1) {
+        setCurrentIndex(index);
+      }
+    } else {
+      // From history or default - fetch search history
+      fetchSearchHistory();
+    }
 
     // Load audio to get duration on mount
     const loadAudioDuration = async () => {
@@ -268,13 +230,11 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
         if (!songId) return;
 
         const response = await instance({
-          method: "GET",
+          method: 'GET',
           url: `/songs/${songId}`,
         });
 
-        const data = Array.isArray(response.data)
-          ? response.data[0]
-          : response.data;
+        const data = Array.isArray(response.data) ? response.data[0] : response.data;
         if (data?.preview_url) {
           // Create sound just to get duration
           const { sound: tempSound } = await Audio.Sound.createAsync(
@@ -291,7 +251,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
           await tempSound.unloadAsync();
         }
       } catch (error) {
-        console.error("Error loading duration:", error);
+        console.error('Error loading duration:', error);
       }
     };
 
@@ -307,7 +267,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
             await sound.unloadAsync();
           }
         } catch (error) {
-          console.error("Error cleaning up sound:", error);
+          console.error('Error cleaning up sound:', error);
         }
       };
       cleanup();
@@ -317,7 +277,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
 
   // Add navigation listener to stop music when navigating away
   useEffect(() => {
-    const unsubscribe = navigation?.addListener("beforeRemove", async () => {
+    const unsubscribe = navigation?.addListener('beforeRemove', async () => {
       try {
         if (sound) {
           await sound.stopAsync();
@@ -325,7 +285,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
         }
         setIsPlaying(false);
       } catch (error) {
-        console.error("Error stopping sound on navigation:", error);
+        console.error('Error stopping sound on navigation:', error);
       }
     });
 
@@ -335,10 +295,10 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
   const fetchSearchHistory = async () => {
     try {
       const response = await instance({
-        method: "GET",
-        url: "/users/search-history",
+        method: 'GET',
+        url: '/users/search-history',
         headers: {
-          "x-device-id": deviceId,
+          'x-device-id': deviceId,
         },
       });
 
@@ -347,7 +307,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
       if (response.data && response.data.search_history) {
         // Extract _id from objects if they are objects, otherwise use the value directly
         const historyIds = response.data.search_history.map((item: any) => {
-          if (typeof item === "object" && item !== null) {
+          if (typeof item === 'object' && item !== null) {
             // If it's an object, get the _id field
             return String(item._id || item);
           }
@@ -355,21 +315,18 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
           return String(item);
         });
 
-        setSearchHistory(historyIds);
+        setSongList(historyIds);
 
         // Find current song index in history
         const currentSongId = String(route?.params?.songId);
         const index = historyIds.indexOf(currentSongId);
-        // console.log("Current song ID:", currentSongId);
-        // console.log("History IDs:", historyIds);
-        // console.log("Current index:", index);
 
         if (index !== -1) {
           setCurrentIndex(index);
         }
       }
     } catch (err: any) {
-      console.error("Error fetching search history:", err);
+      console.error('Error fetching search history:', err);
     }
   };
 
@@ -384,15 +341,15 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
       const idToFetch = songId || route?.params?.songId;
 
       if (!idToFetch) {
-        throw new Error("Song ID not provided");
+        throw new Error('Song ID not provided');
       }
 
       const response = await instance({
-        method: "GET",
+        method: 'GET',
         url: `/songs/${idToFetch}`,
       });
 
-      console.log("API Response:", response.data);
+      console.log('API Response:', response.data);
       // console.log("YouTube URL:", response.data?.youtube_url);
       // console.log("Preview URL:", response.data?.preview_url);
 
@@ -402,17 +359,17 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
           if (response.data.length > 0) {
             setSongData(response.data[0]);
           } else {
-            throw new Error("Song not found");
+            throw new Error('Song not found');
           }
         } else {
           setSongData(response.data);
         }
       } else {
-        throw new Error("Song not found");
+        throw new Error('Song not found');
       }
     } catch (err: any) {
-      console.error("Error fetching song details:", err);
-      setError(err.message || "Failed to load song details");
+      console.error('Error fetching song details:', err);
+      setError(err.message || 'Failed to load song details');
     } finally {
       if (!skipLoading) {
         setLoading(false);
@@ -420,9 +377,9 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
     }
   };
 
-  const animateSlide = (direction: "left" | "right", callback: () => void) => {
-    const { width } = Dimensions.get("window");
-    const startValue = direction === "right" ? -width : width;
+  const animateSlide = (direction: 'left' | 'right', callback: () => void) => {
+    const { width } = Dimensions.get('window');
+    const startValue = direction === 'right' ? -width : width;
 
     // Slide out current content
     Animated.timing(slideAnim, {
@@ -446,23 +403,21 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
   };
 
   const handleNext = async () => {
-    if (searchHistory.length === 0) {
-      // console.log("No search history available");
+    if (songList.length === 0) {
       return;
     }
 
     // Loop to first if at end
-    const nextIndex =
-      currentIndex < searchHistory.length - 1 ? currentIndex + 1 : 0;
-    const nextSongId = searchHistory[nextIndex];
+    const nextIndex = currentIndex < songList.length - 1 ? currentIndex + 1 : 0;
+    const nextSongId = songList[nextIndex];
 
-    console.log("Next button pressed");
-    console.log("Current index:", currentIndex);
-    console.log("Next index:", nextIndex);
-    console.log("Next song ID:", nextSongId);
+    console.log('Next button pressed');
+    console.log('Current index:', currentIndex);
+    console.log('Next index:', nextIndex);
+    console.log('Next song ID:', nextSongId);
 
     if (!nextSongId) {
-      console.error("Next song ID is undefined");
+      console.error('Next song ID is undefined');
       return;
     }
 
@@ -476,30 +431,28 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
     setPosition(0);
 
     // Animate slide to left (next)
-    animateSlide("left", async () => {
+    animateSlide('left', async () => {
       setCurrentIndex(nextIndex);
       await fetchSongDetail(nextSongId, true);
     });
   };
 
   const handlePrevious = async () => {
-    if (searchHistory.length === 0) {
-      console.log("No search history available");
+    if (songList.length === 0) {
       return;
     }
 
     // Loop to last if at start
-    const prevIndex =
-      currentIndex > 0 ? currentIndex - 1 : searchHistory.length - 1;
-    const prevSongId = searchHistory[prevIndex];
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : songList.length - 1;
+    const prevSongId = songList[prevIndex];
 
-    console.log("Previous button pressed");
-    console.log("Current index:", currentIndex);
-    console.log("Previous index:", prevIndex);
-    console.log("Previous song ID:", prevSongId);
+    console.log('Previous button pressed');
+    console.log('Current index:', currentIndex);
+    console.log('Previous index:', prevIndex);
+    console.log('Previous song ID:', prevSongId);
 
     if (!prevSongId) {
-      console.error("Previous song ID is undefined");
+      console.error('Previous song ID is undefined');
       return;
     }
 
@@ -513,7 +466,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
     setPosition(0);
 
     // Animate slide to right (previous)
-    animateSlide("right", async () => {
+    animateSlide('right', async () => {
       setCurrentIndex(prevIndex);
       await fetchSongDetail(prevSongId, true);
     });
@@ -591,16 +544,16 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
   const formatDuration = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = ((ms % 60000) / 1000).toFixed(0);
-    return `${minutes}:${Number(seconds) < 10 ? "0" : ""}${seconds}`;
+    return `${minutes}:${Number(seconds) < 10 ? '0' : ''}${seconds}`;
   };
 
   // Format release date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
   };
 
@@ -614,7 +567,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
   const handlePlayPress = async () => {
     try {
       if (!songData?.preview_url) {
-        console.log("No preview URL available");
+        console.log('No preview URL available');
         return;
       }
 
@@ -640,7 +593,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
       // First time: Create new sound
       setAudioLoading(true);
 
-      console.log("Loading Sound from:", songData.preview_url);
+      console.log('Loading Sound from:', songData.preview_url);
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: songData.preview_url },
         { shouldPlay: true },
@@ -651,7 +604,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
       setAudioLoading(false);
       setIsPlaying(true);
     } catch (error) {
-      console.error("Error playing sound:", error);
+      console.error('Error playing sound:', error);
       setIsPlaying(false);
       setAudioLoading(false);
     }
@@ -681,11 +634,11 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={64} color="#FF4444" />
-        <Text style={styles.errorText}>{error || "Song not found"}</Text>
+        <Text style={styles.errorText}>{error || 'Song not found'}</Text>
         <TouchableOpacity
           style={styles.retryButton}
           onPress={() => {
-            fetchSongDetail()
+            fetchSongDetail();
           }}
           activeOpacity={0.7}
         >
@@ -704,7 +657,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
 
   return (
     <LinearGradient
-      colors={["#FFE9D5", "#FFD4A3", "#FFB366", "#FF9F4D", "#FF8C3A"]}
+      colors={['#FFE9D5', '#FFD4A3', '#FFB366', '#FF9F4D', '#FF8C3A']}
       locations={[0, 0.3, 0.5, 0.7, 1]}
       style={styles.container}
     >
@@ -797,7 +750,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
               <ActivityIndicator size="small" color="#FF9F4D" />
             ) : (
               <Ionicons
-                name={isPlaying ? "pause" : "play"}
+                name={isPlaying ? 'pause' : 'play'}
                 size={40}
                 color="#FF9F4D"
                 style={!isPlaying && { marginLeft: 3 }}
@@ -805,11 +758,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.controlButton}
-            activeOpacity={0.7}
-            onPress={handleNext}
-          >
+          <TouchableOpacity style={styles.controlButton} activeOpacity={0.7} onPress={handleNext}>
             <Ionicons name="play-skip-forward" size={32} color="#000000" />
           </TouchableOpacity>
         </View>
@@ -845,27 +794,25 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
           >
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Title</Text>
-              <Text style={styles.detailValue}>{songData?.title || "N/A"}</Text>
+              <Text style={styles.detailValue}>{songData?.title || 'N/A'}</Text>
             </View>
 
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Artist</Text>
               <Text style={styles.detailValue}>
-                {songData?.artist_subtitle || songData?.artist || "N/A"}
+                {songData?.artist_subtitle || songData?.artist || 'N/A'}
               </Text>
             </View>
 
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Album</Text>
-              <Text style={styles.detailValue}>{songData?.album || "N/A"}</Text>
+              <Text style={styles.detailValue}>{songData?.album || 'N/A'}</Text>
             </View>
 
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Release Date</Text>
               <Text style={styles.detailValue}>
-                {songData?.release_date
-                  ? formatDate(songData.release_date)
-                  : "N/A"}
+                {songData?.release_date ? formatDate(songData.release_date) : 'N/A'}
               </Text>
             </View>
 
@@ -878,7 +825,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
 
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Genre</Text>
-              <Text style={styles.detailValue}>{songData?.genre || "N/A"}</Text>
+              <Text style={styles.detailValue}>{songData?.genre || 'N/A'}</Text>
             </View>
 
             {/* Streaming Links */}
@@ -908,6 +855,24 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
                 )}
               </View>
             </View>
+            {songData?.artist_ids && songData.artist_ids.length > 0 && (
+              <View style={styles.concertsSection}>
+                <TouchableOpacity
+                  style={styles.concertsButton}
+                  onPress={() => {
+                    navigation?.navigate('Concerts', {
+                      artistId: songData.artist_ids[0],
+                      artistName: songData.artist_subtitle || songData.artist,
+                    });
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <MaterialCommunityIcons name="ticket-confirmation" size={24} color="#FF9F4D" />
+                  <Text style={styles.concertsButtonText}>View Upcoming Concerts</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#FF9F4D" />
+                </TouchableOpacity>
+              </View>
+            )}
           </ScrollView>
         </BlurView>
       </Animated.View>
@@ -933,29 +898,20 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
               },
             ]}
           >
-            <TouchableOpacity
-              activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
-            >
-              <BlurView
-                intensity={95}
-                tint="dark"
-                style={styles.playlistModalBlur}
-              >
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+              <BlurView intensity={95} tint="dark" style={styles.playlistModalBlur}>
                 {/* Modal Header */}
                 <View style={styles.playlistModalHeader}>
                   <View style={styles.playlistModalIconContainer}>
                     <LinearGradient
-                      colors={["#FF9F4D", "#FF8C3A"]}
+                      colors={['#FF9F4D', '#FF8C3A']}
                       style={styles.playlistModalIconGradient}
                     >
                       <Ionicons name="add-circle" size={28} color="#FFFFFF" />
                     </LinearGradient>
                   </View>
                   <Text style={styles.playlistModalTitle}>Add to Playlist</Text>
-                  <Text style={styles.playlistModalSubtitle}>
-                    Choose a playlist for this song
-                  </Text>
+                  <Text style={styles.playlistModalSubtitle}>Choose a playlist for this song</Text>
                 </View>
 
                 {/* Playlists List */}
@@ -971,9 +927,7 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
                         size={48}
                         color="rgba(255,255,255,0.3)"
                       />
-                      <Text style={styles.emptyPlaylistsText}>
-                        No playlists yet
-                      </Text>
+                      <Text style={styles.emptyPlaylistsText}>No playlists yet</Text>
                       <Text style={styles.emptyPlaylistsSubtext}>
                         Create a playlist in History tab
                       </Text>
@@ -983,15 +937,12 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
                       <TouchableOpacity
                         key={playlist._id}
                         style={styles.playlistItem}
-                        onPress={() =>
-                          handleAddToPlaylist(playlist._id, playlist.playlist_name)
-                        }
+                        onPress={() => handleAddToPlaylist(playlist._id, playlist.playlist_name)}
                         activeOpacity={0.7}
                       >
                         <View style={styles.playlistItemLeft}>
                           {/* Playlist Cover */}
-                          {playlist.cover_images &&
-                          playlist.cover_images.length > 0 ? (
+                          {playlist.cover_images && playlist.cover_images.length > 0 ? (
                             <View style={styles.playlistItemCover}>
                               <Image
                                 source={{ uri: playlist.cover_images[0] }}
@@ -1011,15 +962,12 @@ const SongResultDetail: React.FC<SongResultDetailProps> = ({
 
                           {/* Playlist Info */}
                           <View style={styles.playlistItemInfo}>
-                            <Text
-                              style={styles.playlistItemName}
-                              numberOfLines={1}
-                            >
+                            <Text style={styles.playlistItemName} numberOfLines={1}>
                               {playlist.playlist_name}
                             </Text>
                             <Text style={styles.playlistItemCount}>
-                              {playlist.tracks.length}{" "}
-                              {playlist.tracks.length <= 1 ? "song" : "songs"}
+                              {playlist.tracks.length}{' '}
+                              {playlist.tracks.length <= 1 ? 'song' : 'songs'}
                             </Text>
                           </View>
                         </View>
@@ -1053,59 +1001,59 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
-    backgroundColor: "#000000",
+    backgroundColor: '#000000',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#FFFFFF",
-    fontWeight: "600",
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   errorContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 40,
-    backgroundColor: "#000000",
+    backgroundColor: '#000000',
   },
   errorText: {
     marginTop: 16,
     fontSize: 18,
-    color: "#FFFFFF",
-    textAlign: "center",
-    fontWeight: "600",
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontWeight: '600',
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 25,
     marginBottom: 12,
   },
   retryButtonText: {
-    color: "#000000",
+    color: '#000000',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   backButtonError: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 25,
   },
   backButtonErrorText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 10,
@@ -1113,13 +1061,13 @@ const styles = StyleSheet.create({
   headerButton: {
     width: 40,
     height: 40,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#000000",
+    fontWeight: '600',
+    color: '#000000',
     letterSpacing: 0.5,
   },
   mainContent: {
@@ -1128,15 +1076,15 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   artworkWrapper: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 30,
-    position: "relative",
+    position: 'relative',
   },
   mainArtwork: {
     width: 400,
     height: 400,
     borderRadius: 16,
-    shadowColor: "#000000ff",
+    shadowColor: '#000000ff',
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.6,
     shadowRadius: 30,
@@ -1144,97 +1092,97 @@ const styles = StyleSheet.create({
     marginBottom: 35,
   },
   artworkOverlay: {
-    position: "absolute",
+    position: 'absolute',
     width: 400,
     height: 400,
     borderRadius: 16,
-    backgroundColor: "rgba(0, 0, 0, 0.25)",
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
     marginBottom: 35,
   },
   mainSongInfo: {
     marginBottom: 35,
   },
   titleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   mainSongTitle: {
     fontSize: 24,
-    fontWeight: "700",
-    color: "#000000",
+    fontWeight: '700',
+    color: '#000000',
     marginBottom: 8,
   },
   mainArtistName: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#333333",
+    fontWeight: '500',
+    color: '#333333',
   },
   progressContainer: {
     marginBottom: 30,
   },
   progressBar: {
     height: 4,
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
     borderRadius: 2,
-    position: "relative",
+    position: 'relative',
     marginBottom: 8,
   },
   progressFill: {
-    height: "100%",
-    backgroundColor: "#000000",
+    height: '100%',
+    backgroundColor: '#000000',
     borderRadius: 2,
   },
   progressThumb: {
-    position: "absolute",
+    position: 'absolute',
     top: -4,
     width: 12,
     height: 12,
-    backgroundColor: "#000000",
+    backgroundColor: '#000000',
     borderRadius: 6,
     marginLeft: -6,
   },
   timeContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   timeText: {
     fontSize: 12,
-    color: "#333333",
-    fontWeight: "500",
+    color: '#333333',
+    fontWeight: '500',
   },
   controlsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 40,
   },
   controlButton: {
     width: 40,
     height: 40,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   playPauseButton: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: "#000000ff",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
+    backgroundColor: '#000000ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   lyricsModal: {
-    position: "absolute",
+    position: 'absolute',
     left: 0,
     right: 0,
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   modalBlur: {
     flex: 1,
@@ -1243,24 +1191,24 @@ const styles = StyleSheet.create({
   handleBar: {
     width: 40,
     height: 5,
-    backgroundColor: "rgba(255, 255, 255, 0.5)",
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 3,
-    alignSelf: "center",
+    alignSelf: 'center',
     marginBottom: 15,
   },
   modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   modalTitle: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    fontWeight: '700',
+    color: '#FFFFFF',
     letterSpacing: 1.5,
     marginLeft: 8,
   },
@@ -1275,64 +1223,64 @@ const styles = StyleSheet.create({
   lyricsText: {
     fontSize: 16,
     lineHeight: 28,
-    color: "#FFFFFF",
-    fontWeight: "400",
-    textAlign: "center",
+    color: '#FFFFFF',
+    fontWeight: '400',
+    textAlign: 'center',
   },
   detailRow: {
     marginBottom: 20,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     borderLeftWidth: 3,
-    borderLeftColor: "#FF9F4D",
+    borderLeftColor: '#FF9F4D',
   },
   detailLabel: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#FF9F4D",
+    fontWeight: '700',
+    color: '#FF9F4D',
     marginBottom: 8,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
     letterSpacing: 1,
   },
   detailValue: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#FFFFFF",
+    fontWeight: '500',
+    color: '#FFFFFF',
     lineHeight: 24,
   },
   streamingSection: {
     marginTop: 10,
     paddingTop: 20,
     borderTopWidth: 2,
-    borderTopColor: "rgba(255, 255, 255, 0.15)",
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
   },
   streamingTitle: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#FF9F4D",
+    fontWeight: '700',
+    color: '#FF9F4D',
     marginBottom: 16,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
     letterSpacing: 1,
-    textAlign: "center",
+    textAlign: 'center',
   },
   streamingButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
     gap: 16,
     marginBottom: 20,
   },
   streamingButton: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 16,
     minWidth: 100,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1340,25 +1288,25 @@ const styles = StyleSheet.create({
   },
   streamingButtonText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontWeight: '600',
+    color: '#FFFFFF',
     marginTop: 8,
   },
   // Add to Playlist Modal
   playlistModalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
   playlistModalContainer: {
-    width: "90%",
+    width: '90%',
     maxWidth: 400,
-    maxHeight: "70%",
+    maxHeight: '70%',
     borderRadius: 24,
-    overflow: "hidden",
-    shadowColor: "#000",
+    overflow: 'hidden',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.8,
     shadowRadius: 30,
@@ -1368,7 +1316,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   playlistModalHeader: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 20,
   },
   playlistModalIconContainer: {
@@ -1378,9 +1326,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#FF9F4D",
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FF9F4D',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.5,
     shadowRadius: 12,
@@ -1388,15 +1336,15 @@ const styles = StyleSheet.create({
   },
   playlistModalTitle: {
     fontSize: 24,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    fontWeight: '700',
+    color: '#FFFFFF',
     marginBottom: 6,
   },
   playlistModalSubtitle: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.7)",
-    textAlign: "center",
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
   },
   playlistsList: {
     maxHeight: 300,
@@ -1405,56 +1353,56 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   emptyPlaylistsContainer: {
-    alignItems: "center",
+    alignItems: 'center',
     paddingVertical: 40,
   },
   emptyPlaylistsText: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.7)",
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.7)',
     marginTop: 12,
   },
   emptyPlaylistsSubtext: {
     fontSize: 13,
-    fontWeight: "500",
-    color: "rgba(255, 255, 255, 0.5)",
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 6,
-    textAlign: "center",
+    textAlign: 'center',
   },
   playlistItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "rgba(255, 159, 77, 0.2)",
+    borderColor: 'rgba(255, 159, 77, 0.2)',
   },
   playlistItemLeft: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
   },
   playlistItemCover: {
     width: 48,
     height: 48,
     borderRadius: 8,
-    overflow: "hidden",
+    overflow: 'hidden',
     marginRight: 12,
   },
   playlistItemCoverImage: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
   playlistItemCoverEmpty: {
     width: 48,
     height: 48,
     borderRadius: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
   },
   playlistItemInfo: {
@@ -1462,28 +1410,57 @@ const styles = StyleSheet.create({
   },
   playlistItemName: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontWeight: '600',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   playlistItemCount: {
     fontSize: 12,
-    fontWeight: "500",
-    color: "rgba(255, 255, 255, 0.6)",
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.6)',
   },
   playlistModalCancelButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     paddingVertical: 14,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 10,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   playlistModalCancelText: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  concertsSection: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  concertsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 159, 77, 0.15)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#FF9F4D',
+    gap: 10,
+    shadowColor: '#FF9F4D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  concertsButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
 
