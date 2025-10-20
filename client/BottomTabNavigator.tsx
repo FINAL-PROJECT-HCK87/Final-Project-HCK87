@@ -1,24 +1,24 @@
-import React, { useEffect, useRef } from 'react'
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { View, Animated } from 'react-native'
-import SearchScreen from './SearchScreen'
-import HistoryScreen from './HistoryScreen'
-import HomeScreen from './HomeScreen'
-import CurvedTabBar from './components/CurvedTabBar'
-import FloatingActionButton from './components/FloatingActionButton'
-import { ListeningProvider, useListening } from './contexts/ListeningContext'
+import React, { useEffect, useRef } from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { View, Animated } from 'react-native';
+import SearchScreen from './SearchScreen';
+import HistoryScreen from './HistoryScreen';
+import HomeScreen from './HomeScreen';
+import CurvedTabBar from './components/CurvedTabBar';
+import FloatingActionButton from './components/FloatingActionButton';
+import { ListeningProvider, useListening } from './contexts/ListeningContext';
 
 export type BottomTabParamList = {
-  Home: undefined
-  Search: undefined
-  History: undefined
-}
+  Home: undefined;
+  Search: undefined;
+  History: undefined;
+};
 
-const Tab = createBottomTabNavigator<BottomTabParamList>()
+const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 const BottomTabNavigatorContent = () => {
-  const { isListening } = useListening()
-  const slideAnim = useRef(new Animated.Value(0)).current
+  const { isListening } = useListening();
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Animate tab bar slide down/up based on listening state
   useEffect(() => {
@@ -28,16 +28,16 @@ const BottomTabNavigatorContent = () => {
         toValue: 150, // Slide down beyond screen
         duration: 300,
         useNativeDriver: true,
-      }).start()
+      }).start();
     } else {
       // Slide up (show)
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 300,
         useNativeDriver: true,
-      }).start()
+      }).start();
     }
-  }, [isListening])
+  }, [isListening]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -55,8 +55,8 @@ const BottomTabNavigatorContent = () => {
             <CurvedTabBar {...props} />
             <FloatingActionButton
               onPress={() => {
-                console.log('FAB pressed, navigating to Home')
-                props.navigation.navigate('Home')
+                console.log('FAB pressed, navigating to Home');
+                props.navigation.navigate('Home');
               }}
               isListening={isListening}
             />
@@ -66,34 +66,34 @@ const BottomTabNavigatorContent = () => {
           headerShown: false,
           tabBarShowLabel: false,
         }}
-        initialRouteName='Home'
+        initialRouteName="Home"
       >
+        <Tab.Screen name="Search" component={SearchScreen} />
         <Tab.Screen
-          name='Search'
-          component={SearchScreen}
-        />
-        <Tab.Screen
-          name='Home'
+          name="Home"
           component={HomeScreen}
           options={{
             tabBarButton: () => null,
           }}
         />
         <Tab.Screen
-          name='History'
+          name="History"
           component={HistoryScreen}
+          options={{
+            tabBarLabel: 'Library',
+          }}
         />
       </Tab.Navigator>
     </View>
-  )
-}
+  );
+};
 
 const BottomTabNavigator = () => {
   return (
     <ListeningProvider>
       <BottomTabNavigatorContent />
     </ListeningProvider>
-  )
-}
+  );
+};
 
-export default BottomTabNavigator
+export default BottomTabNavigator;

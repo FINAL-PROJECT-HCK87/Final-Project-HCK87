@@ -227,7 +227,7 @@ const PlaylistDetailScreen: React.FC<PlaylistDetailScreenProps> = ({ route, navi
               onPress={() => navigation?.goBack()}
               activeOpacity={0.7}
             >
-              <Ionicons name="chevron-back" size={40} color="#000000ff" />
+              <Ionicons name="arrow-back-outline" size={28} color="#000000" />
             </TouchableOpacity>
 
             <View style={styles.headerBackground} />

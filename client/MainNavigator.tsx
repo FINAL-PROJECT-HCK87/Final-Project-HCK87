@@ -1,6 +1,5 @@
 import { createStackNavigator } from '@react-navigation/stack';
 import { StyleSheet } from 'react-native';
-import LyricScreen from './LyricScreen';
 import SearchScreen from './SearchScreen';
 import HistoryScreen from './HistoryScreen';
 import HomeScreen from './HomeScreen';
@@ -40,7 +39,6 @@ const MainNavigator = () => {
       />
       <Stack.Screen name="SearchScreen" component={SearchScreen} />
       <Stack.Screen name="HistoryScreen" component={HistoryScreen} />
-      <Stack.Screen name="LyricScreen" component={LyricScreen} />
       <Stack.Screen
         name="PlaylistDetail"
         component={PlaylistDetailScreen}

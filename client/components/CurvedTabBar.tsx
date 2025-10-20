@@ -64,8 +64,8 @@ const CurvedTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigat
             iconName = isFocused ? 'search' : 'search-outline';
             label = 'Search';
           } else if (route.name === 'History') {
-            iconName = isFocused ? 'time' : 'time-outline';
-            label = 'History';
+            iconName = isFocused ? 'library' : 'library-outline';
+            label = 'Library';
           }
 
           return (
@@ -74,7 +74,6 @@ const CurvedTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigat
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
               accessibilityLabel={options.tabBarAccessibilityLabel}
-              testID={options.tabBarTestID}
               onPress={onPress}
               style={styles.tab}
             >
