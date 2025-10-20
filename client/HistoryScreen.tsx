@@ -169,10 +169,11 @@ const HistoryScreen = () => {
       const transformedPlaylists = response.data.data.map((playlist: any) => {
         // Extract unique cover images from tracks (max 4 for grid display)
         // Server now returns full track data with cover_art_url
-        const coverImages = playlist.tracks
-          ?.slice(0, 4)
-          .map((track: any) => track.cover_art_url)
-          .filter((url: string) => url) || [];
+        const coverImages =
+          playlist.tracks
+            ?.slice(0, 4)
+            .map((track: any) => track.cover_art_url)
+            .filter((url: string) => url) || [];
 
         return {
           _id: playlist._id,
@@ -350,7 +351,12 @@ const HistoryScreen = () => {
         showsVerticalScrollIndicator={false}
         scrollEnabled={scrollEnabled}
       >
-        {/* Playlists Section - PALING ATAS */}
+        {/* Header Section - Library */}
+        <View style={styles.headerSection}>
+          <Text style={styles.headerTitle}>Library</Text>
+        </View>
+
+        {/* Playlists Section */}
         <View style={styles.playlistsSection}>
           <View style={styles.playlistsHeader}>
             <Text style={styles.playlistsSectionTitle}>My Playlists</Text>
@@ -368,7 +374,9 @@ const HistoryScreen = () => {
             <View style={styles.emptyPlaylistContainer}>
               <Ionicons name="musical-notes-outline" size={48} color="rgba(0,0,0,0.25)" />
               <Text style={styles.emptyPlaylistText}>No playlists yet</Text>
-              <Text style={styles.emptyPlaylistSubtext}>Tap Create to make your first playlist</Text>
+              <Text style={styles.emptyPlaylistSubtext}>
+                Tap Create to make your first playlist
+              </Text>
             </View>
           ) : (
             <ScrollView
@@ -385,7 +393,7 @@ const HistoryScreen = () => {
                     // Navigate to PlaylistDetail with playlist data
                     navigation.navigate('PlaylistDetail', {
                       playlistId: playlist._id,
-                      playlist: playlist
+                      playlist: playlist,
                     });
                   }}
                 >
@@ -730,6 +738,22 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  // Header Section
+  headerSection: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  headerTitle: {
+    fontFamily: 'BebasNeue_400Regular',
+    fontSize: 42,
+    color: '#000000ff',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 8,
+  },
   // History Section
   historySection: {
     paddingHorizontal: 20,
@@ -742,14 +766,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontFamily: 'BebasNeue_400Regular',
-    fontSize: 38,
-    color: '#000000ff',
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 8,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 20,
+    color: '#000000',
+    letterSpacing: 0.3,
   },
   deleteAllButton: {
     flexDirection: 'row',
@@ -876,7 +896,6 @@ const styles = StyleSheet.create({
   },
   // Playlists Section
   playlistsSection: {
-    paddingTop: 60,
     paddingBottom: 28,
   },
   playlistsHeader: {
@@ -887,14 +906,10 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   playlistsSectionTitle: {
-    fontFamily: 'BebasNeue_400Regular',
-    fontSize: 38,
-    color: '#000000ff',
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 8,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 20,
+    color: '#000000',
+    letterSpacing: 0.3,
   },
   createPlaylistButton: {
     flexDirection: 'row',
