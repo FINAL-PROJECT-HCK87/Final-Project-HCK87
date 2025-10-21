@@ -619,7 +619,7 @@ class Controller {
         console.error('Shazam API error:', error.response.data);
         return res.status(error.response.status).json({
           message: 'Failed to recognize song',
-          error: error.response.data.message || 'Shazam API error',
+          error: error.response.data.message || 'Song not found',
         });
       }
 

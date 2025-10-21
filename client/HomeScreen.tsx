@@ -422,13 +422,22 @@ const HomeScreen = () => {
 
   const identifySong = async (fileUri: string) => {
     try {
-      console.log('🎵 Sending audio to backend for recognition...');
+      console.log('🎵 Sending audio/video to backend for recognition...');
+
+      // Detect if it's a video or audio file
+      const isVideo =
+        fileUri.includes('.mp4') || fileUri.includes('.mov') || fileUri.includes('video');
+      const fileType = isVideo ? 'video/mp4' : 'audio/m4a';
+      const fileName = isVideo ? 'video.mp4' : 'recording.m4a';
+
+      console.log('📁 File type:', fileType);
+      console.log('📄 File name:', fileName);
 
       const formData = new FormData();
       formData.append('audio', {
         uri: fileUri,
-        type: 'audio/m4a',
-        name: 'recording.m4a',
+        type: fileType,
+        name: fileName,
       } as any);
 
       const response = await heavyInstance({
@@ -455,16 +464,20 @@ const HomeScreen = () => {
       setShowModal(true);
     } catch (err: any) {
       console.error('❌ Recognition error:', err.message);
+      console.error('❌ Full error:', err);
 
       let errorMessage = 'Failed to identify song';
 
       if (err.response) {
         // Backend error response
+        console.error('❌ Backend response:', err.response.data);
         errorMessage = err.response.data?.error || err.response.data?.message || errorMessage;
       } else if (err.message.includes('timeout')) {
-        errorMessage = 'Request timeout. Please try again';
+        errorMessage = 'Request timeout. Video may be too large or network is slow';
       } else if (err.message.includes('Network')) {
-        errorMessage = 'Network error. Check your connection';
+        errorMessage = 'Network error. Check your internet connection';
+      } else if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Connection timed out. Try a shorter video';
       }
 
       setResult({
@@ -543,11 +556,40 @@ const HomeScreen = () => {
       const pickerResult = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['videos'],
         allowsEditing: false,
-        quality: 1,
+        quality: 0.7, // Compress video to reduce size (0.7 = 70% quality)
+        videoMaxDuration: 30, // Limit to 30 seconds for better performance
       });
 
       if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
         const videoUri = pickerResult.assets[0].uri;
+        const videoSize = pickerResult.assets[0].fileSize || 0;
+        const videoDuration = pickerResult.assets[0].duration || 0;
+
+        console.log('📹 Video selected:', {
+          uri: videoUri,
+          size: `${(videoSize / 1024 / 1024).toFixed(2)} MB`,
+          duration: `${(videoDuration / 1000).toFixed(1)} seconds`,
+        });
+
+        // Check file size (warn if > 20MB)
+        if (videoSize > 20 * 1024 * 1024) {
+          Alert.alert(
+            'Large File Warning',
+            'Video file is quite large. Recognition may take longer. Continue?',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => setIsIdentifying(false) },
+              {
+                text: 'Continue',
+                onPress: async () => {
+                  setResult(null);
+                  setShowModal(false);
+                  await identifySong(videoUri);
+                },
+              },
+            ]
+          );
+          return;
+        }
 
         setResult(null);
         setShowModal(false);

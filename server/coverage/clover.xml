@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1760949926213" clover="3.2.0">
-  <project timestamp="1760949926213" name="All files">
+<coverage generated="1761059000699" clover="3.2.0">
+  <project timestamp="1761059000699" name="All files">
     <metrics statements="782" coveredstatements="769" conditionals="512" coveredconditionals="441" methods="108" coveredmethods="105" elements="1402" coveredelements="1315" complexity="0" loc="782" ncloc="782" packages="5" files="13" classes="13"/>
     <package name="server">
       <metrics statements="21" coveredstatements="21" conditionals="8" coveredconditionals="7" methods="1" coveredmethods="1"/>
-      <file name="app.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\app.js">
+      <file name="app.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\app.js">
         <metrics statements="13" coveredstatements="13" conditionals="2" coveredconditionals="1" methods="0" coveredmethods="0"/>
         <line num="1" count="4" type="cond" truecount="1" falsecount="1"/>
         <line num="2" count="4" type="stmt"/>
@@ -20,7 +20,7 @@
         <line num="17" count="4" type="stmt"/>
         <line num="19" count="4" type="stmt"/>
       </file>
-      <file name="errorHandler.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\errorHandler.js">
+      <file name="errorHandler.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\errorHandler.js">
         <metrics statements="8" coveredstatements="8" conditionals="6" coveredconditionals="6" methods="1" coveredmethods="1"/>
         <line num="1" count="5" type="stmt"/>
         <line num="2" count="44" type="stmt"/>
@@ -34,7 +34,7 @@
     </package>
     <package name="server.config">
       <metrics statements="11" coveredstatements="5" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
-      <file name="mongodb.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\config\mongodb.js">
+      <file name="mongodb.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\config\mongodb.js">
         <metrics statements="11" coveredstatements="5" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
         <line num="1" count="1" type="stmt"/>
         <line num="3" count="1" type="stmt"/>
@@ -51,7 +51,7 @@
     </package>
     <package name="server.controllers">
       <metrics statements="680" coveredstatements="676" conditionals="496" coveredconditionals="430" methods="102" coveredmethods="102"/>
-      <file name="Controller.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\controllers\Controller.js">
+      <file name="Controller.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\controllers\Controller.js">
         <metrics statements="249" coveredstatements="249" conditionals="205" coveredconditionals="184" methods="27" coveredmethods="27"/>
         <line num="1" count="4" type="stmt"/>
         <line num="2" count="4" type="stmt"/>
@@ -303,7 +303,7 @@
         <line num="754" count="1" type="stmt"/>
         <line num="759" count="4" type="stmt"/>
       </file>
-      <file name="PlaylistController.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\controllers\PlaylistController.js">
+      <file name="PlaylistController.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\controllers\PlaylistController.js">
         <metrics statements="331" coveredstatements="330" conditionals="243" coveredconditionals="201" methods="60" coveredmethods="60"/>
         <line num="1" count="4" type="stmt"/>
         <line num="2" count="4" type="stmt"/>
@@ -637,7 +637,7 @@
         <line num="938" count="1" type="stmt"/>
         <line num="943" count="4" type="stmt"/>
       </file>
-      <file name="UserController.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\controllers\UserController.js">
+      <file name="UserController.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\controllers\UserController.js">
         <metrics statements="100" coveredstatements="97" conditionals="48" coveredconditionals="45" methods="15" coveredmethods="15"/>
         <line num="1" count="4" type="stmt"/>
         <line num="2" count="4" type="stmt"/>
@@ -743,7 +743,7 @@
     </package>
     <package name="server.middleware">
       <metrics statements="23" coveredstatements="21" conditionals="6" coveredconditionals="4" methods="2" coveredmethods="2"/>
-      <file name="auth.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\middleware\auth.js">
+      <file name="auth.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\middleware\auth.js">
         <metrics statements="13" coveredstatements="12" conditionals="4" coveredconditionals="3" methods="1" coveredmethods="1"/>
         <line num="1" count="4" type="stmt"/>
         <line num="3" count="4" type="stmt"/>
@@ -759,7 +759,7 @@
         <line num="17" count="35" type="stmt"/>
         <line num="20" count="4" type="stmt"/>
       </file>
-      <file name="upload.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\middleware\upload.js">
+      <file name="upload.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\middleware\upload.js">
         <metrics statements="10" coveredstatements="9" conditionals="2" coveredconditionals="1" methods="1" coveredmethods="1"/>
         <line num="1" count="4" type="stmt"/>
         <line num="2" count="4" type="stmt"/>
@@ -775,14 +775,14 @@
     </package>
     <package name="server.routes">
       <metrics statements="47" coveredstatements="46" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
-      <file name="artists.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\routes\artists.js">
+      <file name="artists.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\routes\artists.js">
         <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="4" type="stmt"/>
         <line num="2" count="4" type="stmt"/>
         <line num="6" count="4" type="stmt"/>
         <line num="8" count="4" type="stmt"/>
       </file>
-      <file name="index.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\routes\index.js">
+      <file name="index.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\routes\index.js">
         <metrics statements="12" coveredstatements="11" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="1" count="4" type="stmt"/>
         <line num="2" count="4" type="stmt"/>
@@ -797,7 +797,7 @@
         <line num="14" count="4" type="stmt"/>
         <line num="16" count="4" type="stmt"/>
       </file>
-      <file name="playlists.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\routes\playlists.js">
+      <file name="playlists.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\routes\playlists.js">
         <metrics statements="13" coveredstatements="13" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="4" type="stmt"/>
         <line num="2" count="4" type="stmt"/>
@@ -813,7 +813,7 @@
         <line num="17" count="4" type="stmt"/>
         <line num="19" count="4" type="stmt"/>
       </file>
-      <file name="songs.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\routes\songs.js">
+      <file name="songs.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\routes\songs.js">
         <metrics statements="8" coveredstatements="8" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="4" type="stmt"/>
         <line num="2" count="4" type="stmt"/>
@@ -824,7 +824,7 @@
         <line num="8" count="4" type="stmt"/>
         <line num="11" count="4" type="stmt"/>
       </file>
-      <file name="users.js" path="D:\Hacktiv8 (new)\Phase 3\Final-Project-HCK87\server\routes\users.js">
+      <file name="users.js" path="D:\Hactiv8\Phase 3\Final-Project-HCK87\server\routes\users.js">
         <metrics statements="10" coveredstatements="10" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="4" type="stmt"/>
         <line num="2" count="4" type="stmt"/>
