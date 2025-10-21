@@ -244,7 +244,7 @@ const HistoryScreen = () => {
               });
               // Refresh both history and artists
               fetchHistory();
-              fetchArtists();
+              fetchArtists()
             } catch (error) {
               console.error('Error clearing history:', error);
             }
