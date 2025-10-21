@@ -285,7 +285,7 @@ const PlaylistDetailScreen: React.FC<PlaylistDetailScreenProps> = ({ route, navi
               onPress={handleLeavePlaylist}
               activeOpacity={0.7}
             >
-              <Ionicons name="exit-outline" size={20} color="#FF3B30" />
+              <Ionicons name="exit-outline" size={20} color="#ffffffff" />
               <Text style={styles.leavePlaylistText}>Leave Playlist</Text>
             </TouchableOpacity>
           ) : (
@@ -294,7 +294,7 @@ const PlaylistDetailScreen: React.FC<PlaylistDetailScreenProps> = ({ route, navi
               onPress={handleJoinPlaylist}
               activeOpacity={0.7}
             >
-              <Ionicons name="add-circle-outline" size={20} color="#4CAF50" />
+              <Ionicons name="add-circle-outline" size={20} color="#f8faf8ff" />
               <Text style={styles.joinPlaylistText}>Join Playlist</Text>
             </TouchableOpacity>
           )}
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-end',
-    backgroundColor: 'transparent',
+    backgroundColor: '#FF3B30',
     borderWidth: 1,
     borderColor: '#FF3B30',
     borderRadius: 20,
@@ -461,16 +461,16 @@ const styles = StyleSheet.create({
   leavePlaylistText: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 14,
-    color: '#FF3B30',
+    color: '#ffffffff',
     letterSpacing: 0.3,
   },
   joinPlaylistButton: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-end',
-    backgroundColor: 'transparent',
+    backgroundColor: '#3aab11ff',
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: '#3aab11ff',
     borderRadius: 20,
     gap: 6,
     paddingHorizontal: 16,
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   joinPlaylistText: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 14,
-    color: '#4CAF50',
+    color: '#fbfbfbff',
     letterSpacing: 0.3,
   },
 
