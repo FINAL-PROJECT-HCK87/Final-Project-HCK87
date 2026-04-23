@@ -12,6 +12,8 @@ app.use(express.urlencoded({ extended: true }));
 
 console.log('masuk');
 
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
 app.use(router);
 
 app.use(errorHandler);
